@@ -1,88 +1,160 @@
-export const FORM_CONFIG = {
-  meta: {
-    title: "ADA Restroom Accessibility Inspection",
-    description: "Complete all questions. If 'No' is selected, review the suggested correction."
-  },
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ADA Restroom Inspection</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  sections: [
-    {
-      id: "doors",
-      title: "Doors & Entry",
-      codes: ["3.6", "3.7", "3.8", "3.9"]
-    },
-    {
-      id: "lavatories",
-      title: "Lavatories & Sinks",
-      codes: ["3.21", "3.22", "3.23"]
-    },
-    {
-      id: "toilet",
-      title: "Toilet & Grab Bars",
-      codes: ["3.30", "3.31", "3.33"]
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 40px;
     }
-  ],
 
-  questions: [
-    {
-      id: "q_3_6",
-      code: "3.6",
-      title: "Door Width",
-      question: "Is the door opening at least 32 inches clear when open at 90 degrees?",
-      help: "Measure clear width between door face and frame stop.",
-      solutionsIfNo: [
-        "Install offset hinges.",
-        "Widen the doorway opening."
-      ],
-      requireAnswer: true
-    },
-
-    {
-      id: "q_3_7",
-      code: "3.7",
-      title: "Maneuvering Clearance",
-      question: "Is there adequate maneuvering clearance on the pull side of the door?",
-      help: "Check required clearance per ADA standards.",
-      solutionsIfNo: [
-        "Reconfigure wall or partition to provide clearance."
-      ],
-      requireAnswer: true
-    },
-
-    {
-      id: "q_3_21",
-      code: "3.21",
-      title: "Lavatory Height",
-      question: "Is the top of the lavatory no higher than 34 inches above the floor?",
-      help: "Measure from finished floor to top of rim.",
-      solutionsIfNo: [
-        "Lower the lavatory mounting height."
-      ],
-      requireAnswer: true
-    },
-
-    {
-      id: "q_3_30",
-      code: "3.30",
-      title: "Toilet Clearance",
-      question: "Is there sufficient clearance around the toilet for wheelchair access?",
-      help: "Verify side and rear clearance dimensions.",
-      solutionsIfNo: [
-        "Reposition toilet to meet ADA clearance requirements."
-      ],
-      requireAnswer: true
-    },
-
-    {
-      id: "q_3_33",
-      code: "3.33",
-      title: "Grab Bars",
-      question: "Are grab bars installed at correct height and length?",
-      help: "Check mounting height and length per ADA guidelines.",
-      solutionsIfNo: [
-        "Install compliant grab bars.",
-        "Adjust grab bar mounting height."
-      ],
-      requireAnswer: true
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.08);
     }
-  ]
-};
+
+    h1 {
+      margin: 0;
+      color: #0f3fb8;
+    }
+
+    p {
+      margin-top: 6px;
+      color: #555;
+    }
+
+    .meta {
+      background: #f8f9fc;
+      padding: 20px;
+      border-radius: 14px;
+      margin: 25px 0;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .meta-field {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .meta-field label {
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #1e5eff;
+    }
+
+    input, select, textarea {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    #form {
+      margin-top: 20px;
+    }
+
+    .button-group {
+      margin-top: 30px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    button {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #submitBtn {
+      background: black;
+      color: white;
+    }
+
+    #resetBtn {
+      background: #ddd;
+    }
+
+    #preview {
+      margin-top: 25px;
+      background: #efefef;
+      padding: 15px;
+      border-radius: 12px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <h1 id="title"></h1>
+    <p id="description"></p>
+
+    <!-- META DATA -->
+    <div class="meta">
+      <div class="meta-field">
+        <label for="floorSelect">Floor (1–6)</label>
+        <select id="floorSelect">
+          <option value="">Select...</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+      </div>
+
+      <div class="meta-field">
+        <label for="roomInput">Room / Area</label>
+        <input id="roomInput" type="text" placeholder="e.g. WC 101">
+      </div>
+
+      <div class="meta-field">
+        <label for="restroomType">Restroom Type</label>
+        <select id="restroomType">
+          <option value="">Select...</option>
+          <option value="Men">Men</option>
+          <option value="Women">Women</option>
+          <option value="Family">Family</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- FORM QUESTIONS -->
+    <form id="form"></form>
+
+    <!-- BUTTONS -->
+    <div class="button-group">
+      <button id="resetBtn" type="button">Reset</button>
+      <button id="submitBtn" type="button">Submit</button>
+    </div>
+
+    <!-- DEBUG / PREVIEW -->
+    <div id="preview"></div>
+
+  </div>
+
+  <!-- IMPORTANT -->
+  <script type="module" src="./app.js"></script>
+
+</body>
+</html>
