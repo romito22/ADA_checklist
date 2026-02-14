@@ -182,7 +182,39 @@ function updatePreview() {
   preview.textContent = JSON.stringify(state, null, 2);
 }
 
-submitBtn.addEventListener("click", () => {
+submitBtn.addEventListener("click", async () => {
+
+  if (!validateMeta()) {
+    alert("Complete Floor, Room, and Type.");
+    return;
+  }
+
+  if (!validateAnswers()) {
+    alert("Answer all required questions.");
+    return;
+  }
+
+  // 👇 AQUI VA
+  const inspectionId = crypto.randomUUID();
+  const timestamp = new Date().toISOString();
+
+  const payload = FORM_CONFIG.questions.map(q => ({
+    timestamp,
+    inspectionId,   // 👈 aquí lo mandas al sheet
+    floor: metaState.floor,
+    room: metaState.room,
+    restroomType: metaState.type,
+    code: q.code,
+    section: sectionForCode(q.code),
+    question: q.question,
+    answer: state[q.id] || "",
+    recommendation: state[q.id] === "no" ? (q.solutionsIfNo?.join("; ") || "") : "",
+    notes: state[`${q.id}_notes`] || ""
+  }));
+
+  ...
+});
+
   alert("Saved ✅");
 });
 
