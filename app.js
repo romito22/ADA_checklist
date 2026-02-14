@@ -27,6 +27,10 @@ function render() {
 
   // Create sections
   FORM_CONFIG.sections.forEach((section) => {
+    if (sectionState[section.id] === undefined) {
+  sectionState[section.id] = false; // start closed
+}
+
     const wrapper = document.createElement("div");
     wrapper.style.border = "1px solid #ddd";
     wrapper.style.borderRadius = "12px";
