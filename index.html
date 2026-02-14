@@ -4,30 +4,78 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accessibility Checklist</title>
+  <title>ADA Checklist</title>
   <style>
     body { font-family: Arial, sans-serif; background:#f4f4f4; padding:40px; }
-    .container { max-width: 900px; margin:auto; background:#fff; padding:24px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.1); }
+    .container { max-width: 980px; margin:auto; background:#fff; padding:24px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.1); }
     h1 { margin:0 0 6px; }
     p { margin:0 0 16px; color:#555; }
-    .question-block { margin: 18px 0; padding: 14px 0 18px; border-bottom:1px solid #ddd; }
-    .label { font-weight:700; margin-bottom:8px; }
+
+    .meta { background:#fafafa; border:1px solid #e6e6e6; padding:14px; border-radius:10px; margin: 10px 0 18px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .field { display:flex; flex-direction:column; gap:6px; min-width: 220px; flex: 1; }
+    label { font-weight:700; }
+    select, input, textarea { padding:10px; border-radius:8px; border:1px solid #bbb; font-size:14px; }
+    .hint { font-size:12px; color:#666; }
+
+    details.section { border:1px solid #ddd; border-radius:12px; background:#fff; margin: 12px 0; overflow:hidden; }
+    details.section > summary {
+      cursor:pointer; padding:14px 16px; font-weight:800; background:#f1f1f1;
+      list-style:none; outline:none;
+    }
+    details.section > summary::-webkit-details-marker { display:none; }
+    .section-body { padding: 10px 16px 6px; }
+
+    .question-block { margin: 14px 0; padding: 12px 0 16px; border-bottom:1px solid #eee; }
+    .qtitle { font-weight:800; margin-bottom:8px; }
     .help { font-size:14px; color:#555; margin:6px 0 10px; }
     .radio-group { margin: 10px 0 12px; display:flex; gap:18px; flex-wrap:wrap; }
-    .solutions { background:#fff4f4; padding:12px; border-left:4px solid #d00; margin-top:10px; display:none; }
-    textarea { width:100%; padding:8px; margin-top:8px; min-height:80px; }
-    .refimg { max-width:220px; display:block; margin-top:10px; border:1px solid #ddd; border-radius:8px; }
+    .solutions { background:#fff4f4; padding:12px; border-left:4px solid #d00; margin-top:10px; display:none; border-radius:8px; }
+    textarea.notes { width:100%; padding:10px; margin-top:8px; min-height:80px; border-radius:10px; }
+    .refimg { max-width:220px; display:block; margin-top:10px; border:1px solid #ddd; border-radius:10px; }
+
     .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
-    button { padding:10px 16px; font-weight:700; border-radius:8px; border:1px solid #222; cursor:pointer; }
+    button { padding:10px 16px; font-weight:800; border-radius:10px; border:1px solid #222; cursor:pointer; }
     #submitBtn { background:#111; color:#fff; }
     #resetBtn { background:#fff; color:#111; }
-    .preview { margin-top: 22px; background:#eee; padding:14px; font-family: monospace; white-space: pre-wrap; border-radius:8px; }
+
+    .preview { margin-top: 22px; background:#eee; padding:14px; font-family: monospace; white-space: pre-wrap; border-radius:10px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1 id="title"></h1>
     <p id="description"></p>
+
+    <!-- Pre-form meta -->
+    <div class="meta" id="metaBlock">
+      <div class="row">
+        <div class="field">
+          <label for="floorSelect">Floor (1–6)</label>
+          <select id="floorSelect">
+            <option value="">Select...</option>
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="roomInput">Room / Area</label>
+          <input id="roomInput" type="text" placeholder="e.g., WC 101 / Hallway near..." />
+          <div class="hint">Write the room number or area name.</div>
+        </div>
+
+        <div class="field">
+          <label for="restroomType">Restroom Type</label>
+          <select id="restroomType">
+            <option value="">Select...</option>
+            <option value="men">Men</option>
+            <option value="women">Women</option>
+            <option value="family">Family</option>
+          </select>
+        </div>
+      </div>
+    </div>
 
     <form id="form"></form>
 
@@ -42,3 +90,4 @@
   <script type="module" src="./app.js"></script>
 </body>
 </html>
+
