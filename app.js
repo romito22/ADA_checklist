@@ -50,11 +50,9 @@ function validateMeta() {
 }
 
 function validateAnswers() {
-  for (const q of FORM_CONFIG.questions) {
-    if (q.requireAnswer && !state[q.id]) return false;
-  }
-  return true;
+  return true; // allow unanswered questions
 }
+
 
 function render() {
   form.innerHTML = "";
