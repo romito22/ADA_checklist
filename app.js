@@ -1,4 +1,4 @@
-// app.js
+// app.js (collapsible groups + "Hide this group" after finishing)
 import { FORM_CONFIG } from "./form-config.js";
 
 const form = document.getElementById("form");
@@ -15,7 +15,7 @@ const restroomType = document.getElementById("restroomType");
 title.textContent = FORM_CONFIG.meta.title;
 description.textContent = FORM_CONFIG.meta.description;
 
-const state = {}; // answers + notes
+const state = {};
 const metaState = { floor: "", room: "", type: "" };
 
 function setMeta() {
@@ -24,33 +24,70 @@ function setMeta() {
   metaState.type = restroomType.value || "";
   updatePreview();
 }
-
 floorSelect.addEventListener("change", setMeta);
 roomInput.addEventListener("input", setMeta);
 restroomType.addEventListener("change", setMeta);
 
 function sectionForCode(code) {
-  // Match exact code string in FORM_CONFIG.sections
   for (const s of FORM_CONFIG.sections) {
     if (s.codes.includes(code)) return s.id;
   }
   return "sec_misc";
 }
 
+function countAnsweredInSection(section) {
+  const codes = section.codes;
+  const qs = FORM_CONFIG.questions.filter(q => codes.includes(q.code));
+  let answered = 0;
+  for (const q of qs) if (state[q.id]) answered++;
+  return { answered, total: qs.length };
+}
+
 function render() {
   form.innerHTML = "";
 
-  // Build sections container map
   const sectionNodes = new Map();
+  const sectionDetails = new Map();
 
-  // Create all sections as <details>
+  // Create sections (collapsible)
   for (const s of FORM_CONFIG.sections) {
     const details = document.createElement("details");
     details.className = "section";
-    details.open = true; // collapsible but open by default
+    details.open = true;
 
     const summary = document.createElement("summary");
-    summary.textContent = s.title;
+    summary.dataset.sectionId = s.id;
+
+    const left = document.createElement("span");
+    left.textContent = s.title;
+
+    const right = document.createElement("span");
+    right.className = "summary-right";
+
+    const badge = document.createElement("span");
+    badge.className = "badge";
+    badge.id = `badge_${s.id}`;
+    badge.textContent = "0/0";
+
+    const hideBtn = document.createElement("button");
+    hideBtn.type = "button";
+    hideBtn.className = "btn-mini";
+    hideBtn.textContent = "Hide group";
+    hideBtn.addEventListener("click", (e) => {
+      e.preventDefault();      // prevent toggle
+      e.stopPropagation();     // prevent toggle
+      details.style.display = "none";
+      // store hidden state so it stays hidden after re-render
+      state[`__hidden_${s.id}`] = true;
+      updatePreview();
+    });
+
+    right.appendChild(badge);
+    right.appendChild(hideBtn);
+
+    summary.appendChild(left);
+    summary.appendChild(right);
+
     details.appendChild(summary);
 
     const body = document.createElement("div");
@@ -58,30 +95,36 @@ function render() {
     details.appendChild(body);
 
     form.appendChild(details);
+
     sectionNodes.set(s.id, body);
+    sectionDetails.set(s.id, details);
   }
 
-  // If something doesn't match, it goes here
-  const miscDetails = document.createElement("details");
-  miscDetails.className = "section";
-  miscDetails.open = true;
-  const miscSummary = document.createElement("summary");
-  miscSummary.textContent = "Other";
-  miscDetails.appendChild(miscSummary);
-  const miscBody = document.createElement("div");
-  miscBody.className = "section-body";
-  miscDetails.appendChild(miscBody);
-  form.appendChild(miscDetails);
-  sectionNodes.set("sec_misc", miscBody);
-
-  // Render questions into their section
-  FORM_CONFIG.questions.forEach((q) => {
+  // Render questions into sections
+  for (const q of FORM_CONFIG.questions) {
     const secId = sectionForCode(q.code);
-    const host = sectionNodes.get(secId) || miscBody;
-    host.appendChild(renderQuestion(q));
-  });
+    const host = sectionNodes.get(secId);
+    if (host) host.appendChild(renderQuestion(q));
+  }
+
+  // Apply hidden state + update badges
+  for (const s of FORM_CONFIG.sections) {
+    const details = sectionDetails.get(s.id);
+    if (!details) continue;
+
+    if (state[`__hidden_${s.id}`] === true) details.style.display = "none";
+
+    updateSectionBadge(s);
+  }
 
   updatePreview();
+}
+
+function updateSectionBadge(section) {
+  const badge = document.getElementById(`badge_${section.id}`);
+  if (!badge) return;
+  const { answered, total } = countAnsweredInSection(section);
+  badge.textContent = `${answered}/${total}`;
 }
 
 function renderQuestion(q) {
@@ -93,9 +136,10 @@ function renderQuestion(q) {
   qtitle.textContent = `${q.code} — ${q.title}`;
   block.appendChild(qtitle);
 
-  const questionText = document.createElement("div");
-  questionText.textContent = q.question;
-  block.appendChild(questionText);
+  const prompt = document.createElement("div");
+  prompt.className = "prompt";
+  prompt.textContent = q.question;
+  block.appendChild(prompt);
 
   if (q.help) {
     const help = document.createElement("div");
@@ -104,7 +148,6 @@ function renderQuestion(q) {
     block.appendChild(help);
   }
 
-  // Reference image (optional)
   if (q.referenceImage) {
     const img = document.createElement("img");
     img.className = "refimg";
@@ -113,7 +156,6 @@ function renderQuestion(q) {
     block.appendChild(img);
   }
 
-  // Options
   const radioGroup = document.createElement("div");
   radioGroup.className = "radio-group";
 
@@ -135,6 +177,10 @@ function renderQuestion(q) {
       state[q.id] = opt.value;
       updateSolutions(q);
       updatePreview();
+
+      // update badge live
+      const sec = FORM_CONFIG.sections.find(s => s.codes.includes(q.code));
+      if (sec) updateSectionBadge(sec);
     });
 
     row.appendChild(input);
@@ -144,7 +190,6 @@ function renderQuestion(q) {
 
   block.appendChild(radioGroup);
 
-  // Solutions (only NO)
   const solutionsBox = document.createElement("div");
   solutionsBox.className = "solutions";
   solutionsBox.id = `solutions_${q.id}`;
@@ -160,10 +205,8 @@ function renderQuestion(q) {
     ul.appendChild(li);
   });
   solutionsBox.appendChild(ul);
-
   block.appendChild(solutionsBox);
 
-  // Notes
   const notesLabel = document.createElement("div");
   notesLabel.className = "qtitle";
   notesLabel.textContent = "Notes:";
@@ -179,9 +222,7 @@ function renderQuestion(q) {
   });
   block.appendChild(textarea);
 
-  // initial visibility
   updateSolutions(q);
-
   return block;
 }
 
@@ -194,7 +235,6 @@ function updateSolutions(q) {
 function validateMeta() {
   return metaState.floor && metaState.room.trim().length > 0 && metaState.type;
 }
-
 function validateAnswers() {
   for (const q of FORM_CONFIG.questions) {
     if (q.requireAnswer && !state[q.id]) return false;
@@ -206,6 +246,9 @@ function updatePreview() {
   const payload = {
     timestamp: new Date().toISOString(),
     meta: { ...metaState },
+    hiddenSections: FORM_CONFIG.sections
+      .filter(s => state[`__hidden_${s.id}`] === true)
+      .map(s => s.id),
     responses: FORM_CONFIG.questions.map((q) => ({
       id: q.id,
       code: q.code,
@@ -214,7 +257,6 @@ function updatePreview() {
       notes: state[`${q.id}_notes`] || ""
     }))
   };
-
   preview.textContent = JSON.stringify(payload, null, 2);
 }
 
@@ -227,8 +269,7 @@ submitBtn.addEventListener("click", () => {
     alert("Please answer all required questions (YES / NO / NOT APPLICABLE).");
     return;
   }
-  alert("Preview saved ✅ (next step: connect to Google Sheets).");
-  console.log("SUBMIT payload:", JSON.parse(preview.textContent));
+  alert("Preview saved ✅");
 });
 
 resetBtn.addEventListener("click", () => {
