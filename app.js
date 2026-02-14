@@ -251,10 +251,7 @@ submitBtn.addEventListener("click", async () => {
     return;
   }
 
-  if (!validateAnswers()) {
-    alert("Please answer all questions (YES / NO / NA).");
-    return;
-  }
+  
 
   const inspectionId = crypto.randomUUID();
   const timestamp = new Date().toISOString();
