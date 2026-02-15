@@ -269,23 +269,19 @@ submitBtn.addEventListener("click", async () => {
   }));
 
   try {
-    await fetch(WEB_APP_URL, {
-  method: "POST",
-  headers: { "Content-Type": "text/plain;charset=utf-8" },
-  body: JSON.stringify(payload)
-});
+  await fetch(WEB_APP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  });
 
-alert("Saved ✅");
+  alert("Saved ✅ (sent)");
+} catch (err) {
+  console.error(err);
+  alert("Connection error ❌");
+}
 
-
-    const result = await res.json();
-    if (result.status === "success") alert("Inspection saved to Google Sheets ✅");
-    else alert("Save failed ❌");
-  } catch (err) {
-    console.error(err);
-    alert("Connection error ❌");
-  }
-});
 
 resetBtn.addEventListener("click", () => {
   Object.keys(state).forEach((k) => delete state[k]);
