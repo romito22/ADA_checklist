@@ -3,7 +3,7 @@
 // ==========================
 
 const WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycbz1pbrHlJ-H1qQg5Wh0ixRDnL030c-Y0uZTvTnIp9s2jBKTrVKQvcXJM2jvpkDKB2fgTw/exec";
+  "https://script.google.com/macros/s/AKfycbyHf68B5TISRmdCOpvjbb_4vNRm8yyuZ6getsJMwO-yYvlthYxBcrzH_IxAT_frn2yxCw/exec";
 
 let FORM_CONFIG = null;
 
