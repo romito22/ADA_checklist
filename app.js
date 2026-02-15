@@ -1,5 +1,5 @@
 const WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycbyBpR4aFiAXJEdJFAcqvlr706DK3Oi-u3EjtsQvNgExULQwEeaBo5EvV2GqeS_wyaYI9g/exec";
+  "https://script.google.com/macros/s/AKfycbz1pbrHlJ-H1qQg5Wh0ixRDnL030c-Y0uZTvTnIp9s2jBKTrVKQvcXJM2jvpkDKB2fgTw/exec";
 
 let FORM_CONFIG = null;
 
