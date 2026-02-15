@@ -269,11 +269,14 @@ submitBtn.addEventListener("click", async () => {
   }));
 
   try {
-    const res = await fetch(WEB_APP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    await fetch(WEB_APP_URL, {
+  method: "POST",
+  headers: { "Content-Type": "text/plain;charset=utf-8" },
+  body: JSON.stringify(payload)
+});
+
+alert("Saved ✅");
+
 
     const result = await res.json();
     if (result.status === "success") alert("Inspection saved to Google Sheets ✅");
