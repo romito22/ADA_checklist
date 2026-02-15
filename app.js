@@ -1,3 +1,7 @@
+// ==========================
+// app.js (FULL / UPDATED)
+// ==========================
+
 const WEB_APP_URL =
   "https://script.google.com/macros/s/AKfycbz1pbrHlJ-H1qQg5Wh0ixRDnL030c-Y0uZTvTnIp9s2jBKTrVKQvcXJM2jvpkDKB2fgTw/exec";
 
@@ -20,6 +24,7 @@ const state = {};        // answers + notes
 const sectionState = {}; // open/closed
 const metaState = { floor: "", room: "", type: "" };
 
+// ---------- Helpers ----------
 function baseCode(code) {
   // "3.36.1" -> "3.36"
   const parts = String(code).split(".");
@@ -27,6 +32,7 @@ function baseCode(code) {
 }
 
 function sectionForCode(code) {
+  if (!FORM_CONFIG) return null;
   const bc = baseCode(code);
   for (const s of FORM_CONFIG.sections) {
     if (s.codes.includes(bc)) return s.id;
@@ -42,23 +48,22 @@ function updateMeta() {
 }
 
 function validateMeta() {
-  return (
-    metaState.floor &&
-    metaState.room.trim().length > 0 &&
-    metaState.type
-  );
+  return metaState.floor && metaState.room.trim().length > 0 && metaState.type;
 }
 
+// ✅ allow unanswered questions (no blocking)
 function validateAnswers() {
-  return true; // allow unanswered questions
+  return true;
 }
 
-
+// ---------- Render ----------
 function render() {
+  if (!FORM_CONFIG) return;
+
   form.innerHTML = "";
   const sectionBodies = {};
 
-  // Sections
+  // Sections (collapsible)
   FORM_CONFIG.sections.forEach((section) => {
     if (sectionState[section.id] === undefined) sectionState[section.id] = false; // start closed
 
@@ -233,8 +238,7 @@ function updatePreview() {
       ? FORM_CONFIG.questions.map((q) => ({
           code: q.code,
           answer: state[q.id] || "",
-          recommendation:
-            state[q.id] === "no" ? (q.solutionsIfNo || []).join("; ") : "",
+          recommendation: state[q.id] === "no" ? (q.solutionsIfNo || []).join("; ") : "",
           notes: state[`${q.id}_notes`] || ""
         }))
       : []
@@ -243,13 +247,18 @@ function updatePreview() {
   preview.textContent = JSON.stringify(payload, null, 2);
 }
 
+// ---------- Submit ----------
 submitBtn.addEventListener("click", async () => {
   if (!validateMeta()) {
     alert("Please complete Floor, Room/Area, and Restroom Type.");
     return;
   }
 
-  
+  // questions can be blank (validateAnswers always true)
+  if (!validateAnswers()) {
+    alert("Please answer all questions (YES / NO / NA).");
+    return;
+  }
 
   const inspectionId = crypto.randomUUID();
   const timestamp = new Date().toISOString();
@@ -268,21 +277,26 @@ submitBtn.addEventListener("click", async () => {
     notes: state[`${q.id}_notes`] || ""
   }));
 
+  // Debug (optional)
+  console.log("Sending to:", WEB_APP_URL);
+  console.log("Rows:", payload.length);
+
   try {
-  await fetch(WEB_APP_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
-  });
+    await fetch(WEB_APP_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+    });
 
-  alert("Saved ✅ (sent)");
-} catch (err) {
-  console.error(err);
-  alert("Connection error ❌");
-}
+    alert("Saved ✅ (sent)");
+  } catch (err) {
+    console.error("FETCH FAILED:", err);
+    alert("Connection error ❌ (check console)");
+  }
+});
 
-
+// ---------- Reset ----------
 resetBtn.addEventListener("click", () => {
   Object.keys(state).forEach((k) => delete state[k]);
   Object.keys(sectionState).forEach((k) => delete sectionState[k]);
@@ -295,6 +309,7 @@ resetBtn.addEventListener("click", () => {
   render();
 });
 
+// ---------- Load Config ----------
 async function loadConfig() {
   const res = await fetch("./form-config.json");
   FORM_CONFIG = await res.json();
