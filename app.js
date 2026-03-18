@@ -1,5 +1,5 @@
 // ==========================
-// app.js (FULL / UPDATED)
+// app.js (UPDATED / COMPATIBLE WITH NEW CONFIG + GOOGLE SHEETS)
 // ==========================
 
 const WEB_APP_URL =
@@ -26,18 +26,39 @@ const metaState = { floor: "", room: "", type: "" };
 
 // ---------- Helpers ----------
 function baseCode(code) {
-  // "3.36.1" -> "3.36"
   const parts = String(code).split(".");
   return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : String(code);
 }
 
-function sectionForCode(code) {
+function getSectionForCode(code) {
   if (!FORM_CONFIG) return null;
-  const bc = baseCode(code);
-  for (const s of FORM_CONFIG.sections) {
-    if (s.codes.includes(bc)) return s.id;
+
+  // 1) exact code match first
+  for (const section of FORM_CONFIG.sections) {
+    if (Array.isArray(section.codes) && section.codes.includes(code)) {
+      return section;
+    }
   }
+
+  // 2) fallback to base code if needed
+  const bc = baseCode(code);
+  for (const section of FORM_CONFIG.sections) {
+    if (Array.isArray(section.codes) && section.codes.includes(bc)) {
+      return section;
+    }
+  }
+
   return null;
+}
+
+function sectionIdForCode(code) {
+  const section = getSectionForCode(code);
+  return section ? section.id : null;
+}
+
+function sectionTitleForCode(code) {
+  const section = getSectionForCode(code);
+  return section ? section.title : "";
 }
 
 function updateMeta() {
@@ -51,9 +72,16 @@ function validateMeta() {
   return metaState.floor && metaState.room.trim().length > 0 && metaState.type;
 }
 
-// ✅ allow unanswered questions (no blocking)
+// keep previous behavior: unanswered questions are allowed
 function validateAnswers() {
   return true;
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 // ---------- Render ----------
@@ -65,13 +93,16 @@ function render() {
 
   // Sections (collapsible)
   FORM_CONFIG.sections.forEach((section) => {
-    if (sectionState[section.id] === undefined) sectionState[section.id] = false; // start closed
+    if (sectionState[section.id] === undefined) {
+      sectionState[section.id] = false; // start closed
+    }
 
     const wrapper = document.createElement("div");
     wrapper.style.border = "1px solid #ddd";
     wrapper.style.borderRadius = "12px";
     wrapper.style.margin = "12px 0";
     wrapper.style.overflow = "hidden";
+    wrapper.style.background = "#fff";
 
     const header = document.createElement("div");
     header.style.display = "flex";
@@ -86,6 +117,7 @@ function render() {
     t.textContent = section.title;
 
     const toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
     toggleBtn.textContent = sectionState[section.id] ? "Hide" : "Show";
     toggleBtn.style.background = "#1e5eff";
     toggleBtn.style.color = "white";
@@ -93,6 +125,7 @@ function render() {
     toggleBtn.style.padding = "6px 12px";
     toggleBtn.style.borderRadius = "8px";
     toggleBtn.style.cursor = "pointer";
+    toggleBtn.style.fontWeight = "900";
 
     toggleBtn.addEventListener("click", () => {
       sectionState[section.id] = !sectionState[section.id];
@@ -115,8 +148,8 @@ function render() {
 
   // Questions
   FORM_CONFIG.questions.forEach((q) => {
-    const secId = sectionForCode(q.code);
-    if (!secId) return;
+    const secId = sectionIdForCode(q.code);
+    if (!secId || !sectionBodies[secId]) return;
     sectionBodies[secId].appendChild(renderQuestion(q));
   });
 
@@ -132,27 +165,29 @@ function renderQuestion(q) {
   const title = document.createElement("div");
   title.style.fontWeight = "900";
   title.style.color = "#0f3fb8";
+  title.style.marginBottom = "4px";
   title.textContent = `${q.code} — ${q.title}`;
   block.appendChild(title);
 
   const prompt = document.createElement("div");
   prompt.style.fontWeight = "800";
   prompt.style.color = "#1e5eff";
-  prompt.style.marginBottom = "6px";
+  prompt.style.marginBottom = "8px";
   prompt.textContent = q.question;
   block.appendChild(prompt);
 
-  // Measurements (always show if present)
+  // Measurements (show if present)
   if (Array.isArray(q.measurements) && q.measurements.length) {
     const m = document.createElement("div");
     m.style.fontSize = "14px";
     m.style.color = "#111";
-    m.style.marginBottom = "6px";
-    m.innerHTML = `<strong>Measurements:</strong> ${q.measurements.join(", ")}`;
+    m.style.marginBottom = "8px";
+    m.innerHTML = `<strong>Measurements:</strong> ${escapeHtml(q.measurements.join(", "))}`;
     block.appendChild(m);
   }
 
-  if (q.help) {
+  // help intentionally kept but will only render if non-empty
+  if (q.help && String(q.help).trim()) {
     const help = document.createElement("div");
     help.style.fontSize = "14px";
     help.style.color = "#555";
@@ -160,6 +195,29 @@ function renderQuestion(q) {
     help.textContent = q.help;
     block.appendChild(help);
   }
+
+  // Reference image placeholder (ready for future use)
+  const refWrap = document.createElement("div");
+  refWrap.style.marginBottom = "8px";
+
+  if (q.referenceImage && String(q.referenceImage).trim()) {
+    const link = document.createElement("a");
+    link.href = q.referenceImage;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Open reference image";
+    link.style.color = "#0f3fb8";
+    link.style.fontWeight = "700";
+    refWrap.appendChild(link);
+  } else {
+    const ph = document.createElement("div");
+    ph.style.fontSize = "13px";
+    ph.style.color = "#8b93a7";
+    ph.textContent = "Reference image coming soon";
+    refWrap.appendChild(ph);
+  }
+
+  block.appendChild(refWrap);
 
   // YES / NO / NA
   const options = ["yes", "no", "na"];
@@ -169,6 +227,7 @@ function renderQuestion(q) {
   options.forEach((opt) => {
     const label = document.createElement("label");
     label.style.marginRight = "16px";
+    label.style.cursor = "pointer";
 
     const input = document.createElement("input");
     input.type = "radio";
@@ -178,7 +237,7 @@ function renderQuestion(q) {
 
     input.addEventListener("change", () => {
       state[q.id] = opt;
-      render(); // re-render to show solutions
+      render(); // keep old behavior so solutions appear immediately
     });
 
     label.appendChild(input);
@@ -192,7 +251,7 @@ function renderQuestion(q) {
   if (state[q.id] === "no" && Array.isArray(q.solutionsIfNo) && q.solutionsIfNo.length) {
     const sol = document.createElement("div");
     sol.style.marginTop = "8px";
-    sol.style.padding = "8px";
+    sol.style.padding = "10px 12px";
     sol.style.background = "#fff4f4";
     sol.style.borderLeft = "4px solid red";
     sol.style.borderRadius = "8px";
@@ -202,6 +261,9 @@ function renderQuestion(q) {
     sol.appendChild(strong);
 
     const ul = document.createElement("ul");
+    ul.style.marginTop = "8px";
+    ul.style.marginBottom = "0";
+
     q.solutionsIfNo.forEach((s) => {
       const li = document.createElement("li");
       li.textContent = s;
@@ -232,13 +294,22 @@ function renderQuestion(q) {
 
 function updatePreview() {
   const payload = {
-    meta: { ...metaState },
+    meta: {
+      floor: metaState.floor,
+      room: metaState.room,
+      restroomType: metaState.type
+    },
     totalQuestions: FORM_CONFIG ? FORM_CONFIG.questions.length : 0,
     responses: FORM_CONFIG
       ? FORM_CONFIG.questions.map((q) => ({
           code: q.code,
+          section: sectionTitleForCode(q.code),
+          question: q.question,
           answer: state[q.id] || "",
-          recommendation: state[q.id] === "no" ? (q.solutionsIfNo || []).join("; ") : "",
+          recommendation:
+            state[q.id] === "no"
+              ? (q.solutionsIfNo || []).join("; ")
+              : "",
           notes: state[`${q.id}_notes`] || ""
         }))
       : []
@@ -254,7 +325,6 @@ submitBtn.addEventListener("click", async () => {
     return;
   }
 
-  // questions can be blank (validateAnswers always true)
   if (!validateAnswers()) {
     alert("Please answer all questions (YES / NO / NA).");
     return;
@@ -263,6 +333,7 @@ submitBtn.addEventListener("click", async () => {
   const inspectionId = crypto.randomUUID();
   const timestamp = new Date().toISOString();
 
+  // Respect spreadsheet format
   const payload = FORM_CONFIG.questions.map((q) => ({
     timestamp,
     inspectionId,
@@ -270,23 +341,26 @@ submitBtn.addEventListener("click", async () => {
     room: metaState.room,
     restroomType: metaState.type,
     code: q.code,
-    section: sectionForCode(q.code),
+    section: sectionTitleForCode(q.code),
     question: q.question,
     answer: state[q.id] || "",
-    recommendation: state[q.id] === "no" ? (q.solutionsIfNo || []).join("; ") : "",
+    recommendation:
+      state[q.id] === "no"
+        ? (q.solutionsIfNo || []).join("; ")
+        : "",
     notes: state[`${q.id}_notes`] || ""
   }));
 
-  // Debug (optional)
   console.log("Sending to:", WEB_APP_URL);
   console.log("Rows:", payload.length);
+  console.log(payload);
 
   try {
     await fetch(WEB_APP_URL, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
     alert("Saved ✅ (sent)");
@@ -314,8 +388,8 @@ async function loadConfig() {
   const res = await fetch("./form-config.json");
   FORM_CONFIG = await res.json();
 
-  titleEl.textContent = FORM_CONFIG.meta.title;
-  descEl.textContent = FORM_CONFIG.meta.description;
+  titleEl.textContent = FORM_CONFIG?.meta?.title || "ADA Restroom Accessibility Inspection";
+  descEl.textContent = FORM_CONFIG?.meta?.description || "";
 
   floorSelect.addEventListener("change", updateMeta);
   roomInput.addEventListener("input", updateMeta);
