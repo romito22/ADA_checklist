@@ -1,5 +1,5 @@
 // ==========================
-// app.js (UPDATED / COMPATIBLE WITH NEW CONFIG + GOOGLE SHEETS)
+// app.js (UPDATED / INLINE REFERENCE IMAGES)
 // ==========================
 
 const WEB_APP_URL =
@@ -196,28 +196,39 @@ function renderQuestion(q) {
     block.appendChild(help);
   }
 
-  // Reference image placeholder (ready for future use)
-  const refWrap = document.createElement("div");
-  refWrap.style.marginBottom = "8px";
-
+  // Reference image shown inline
   if (q.referenceImage && String(q.referenceImage).trim()) {
-    const link = document.createElement("a");
-    link.href = q.referenceImage;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "Open reference image";
-    link.style.color = "#0f3fb8";
-    link.style.fontWeight = "700";
-    refWrap.appendChild(link);
-  } else {
-    const ph = document.createElement("div");
-    ph.style.fontSize = "13px";
-    ph.style.color = "#8b93a7";
-    ph.textContent = "Reference image coming soon";
-    refWrap.appendChild(ph);
-  }
+    const refWrap = document.createElement("div");
+    refWrap.style.marginBottom = "10px";
 
-  block.appendChild(refWrap);
+    const img = document.createElement("img");
+    img.src = q.referenceImage;
+    img.alt = `Reference image for ${q.code}`;
+    img.loading = "lazy";
+    img.style.display = "block";
+    img.style.width = "100%";
+    img.style.maxWidth = "420px";
+    img.style.height = "auto";
+    img.style.margin = "8px 0 4px";
+    img.style.border = "1px solid #d7deec";
+    img.style.borderRadius = "12px";
+    img.style.background = "#fff";
+    img.style.padding = "6px";
+    img.style.boxSizing = "border-box";
+
+    img.onerror = () => {
+      refWrap.innerHTML = "";
+      const fallback = document.createElement("div");
+      fallback.style.fontSize = "13px";
+      fallback.style.color = "#b00020";
+      fallback.style.marginTop = "6px";
+      fallback.textContent = `Could not load reference image: ${q.referenceImage}`;
+      refWrap.appendChild(fallback);
+    };
+
+    refWrap.appendChild(img);
+    block.appendChild(refWrap);
+  }
 
   // YES / NO / NA
   const options = ["yes", "no", "na"];
