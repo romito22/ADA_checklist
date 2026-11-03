@@ -1,9 +1,21 @@
 // ==========================
-// app.js (UPDATED / INLINE REFERENCE IMAGES)
+// app.js — inspection survey
 // ==========================
 
 const WEB_APP_URL =
   "https://script.google.com/macros/s/AKfycbyHf68B5TISRmdCOpvjbb_4vNRm8yyuZ6getsJMwO-yYvlthYxBcrzH_IxAT_frn2yxCw/exec";
+
+const DRAFT_KEY = "ada_checklist_draft_v1";
+const DRAFT_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+const SEND_TIMEOUT_MS = 60000;
+
+// [stored value, label, css class]
+const ANSWER_OPTIONS = [
+  ["yes", "YES", "y"],
+  ["no", "NO", "n"],
+  ["na", "N/A", "a"],
+  ["unsure", "NOT SURE", "u"]
+];
 
 let FORM_CONFIG = null;
 
@@ -16,15 +28,44 @@ const titleEl = document.getElementById("title");
 const descEl = document.getElementById("description");
 
 const floorSelect = document.getElementById("floorSelect");
+const roomPick = document.getElementById("roomPick");
 const roomInput = document.getElementById("roomInput");
+const roomInfo = document.getElementById("roomInfo");
 const restroomType = document.getElementById("restroomType");
+const inspectionDate = document.getElementById("inspectionDate");
+const surveyProgress = document.getElementById("surveyProgress");
+
+const draftBanner = document.getElementById("draftBanner");
+const draftText = document.getElementById("draftText");
+
+const reviewModal = document.getElementById("reviewModal");
+const reviewBody = document.getElementById("reviewBody");
+const reviewActions = document.getElementById("reviewActions");
+const reviewTitle = document.getElementById("reviewTitle");
 
 // State
 const state = {};        // answers + notes
 const sectionState = {}; // open/closed
-const metaState = { floor: "", room: "", type: "" };
+const metaState = { floor: "", room: "", type: "", date: "" };
+// One id per inspection, created when the form starts (not per click), so a
+// retry or double tap can never create a second inspection.
+const session = { id: newId(), timestamp: null };
+let sending = false;
 
 // ---------- Helpers ----------
+function newId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+function today() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 function baseCode(code) {
   const parts = String(code).split(".");
   return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : String(code);
@@ -61,18 +102,42 @@ function sectionTitleForCode(code) {
   return section ? section.title : "";
 }
 
+function typeFor(listType) {
+  const t = String(listType || "").toLowerCase();
+  // check "women" first: "women's" contains "men's"
+  if (t.includes("women")) return "Women";
+  if (t.includes("men")) return "Men";
+  if (t.includes("mother") || t.includes("family")) return "Family";
+  return "Unisex";
+}
+
+function tally() {
+  const t = { yes: 0, no: 0, na: 0, unsure: 0, blank: 0 };
+  FORM_CONFIG.questions.forEach((q) => {
+    const a = state[q.id];
+    if (a && t[a] !== undefined) t[a]++;
+    else t.blank++;
+  });
+  t.total = FORM_CONFIG.questions.length;
+  t.answered = t.yes + t.no + t.na;
+  return t;
+}
+
 function updateMeta() {
   metaState.floor = floorSelect.value || "";
   metaState.room = roomInput.value || "";
   metaState.type = restroomType.value || "";
+  metaState.date = inspectionDate.value || "";
   updatePreview();
+  updateProgress();
+  saveDraft();
 }
 
 function validateMeta() {
-  return metaState.floor && metaState.room.trim().length > 0 && metaState.type;
+  return metaState.floor && metaState.room.trim().length > 0 && metaState.type && metaState.date;
 }
 
-// keep previous behavior: unanswered questions are allowed
+// unanswered questions are allowed; the review screen warns about them
 function validateAnswers() {
   return true;
 }
@@ -84,12 +149,219 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
+function updateProgress() {
+  if (!FORM_CONFIG) return;
+  const t = tally();
+  const parts = [`${t.answered} of ${t.total} answered`];
+  if (t.unsure) parts.push(`${t.unsure} not sure`);
+  surveyProgress.textContent = parts.join(" · ");
+}
+
+// ---------- Room picker (list comes from dashboard.js) ----------
+function populateRooms() {
+  if (!window.ADA || !window.ADA.loaded()) return;
+
+  const keep = roomPick.value;
+  const rows = window.ADA.rows()
+    .slice()
+    .sort(
+      (a, b) =>
+        Number(a.floor) - Number(b.floor) ||
+        String(a.room).localeCompare(String(b.room), undefined, { numeric: true })
+    );
+
+  roomPick.innerHTML = '<option value="">Select a restroom...</option>';
+  rows.forEach((r) => {
+    const info = window.ADA.info(r.room);
+    const opt = document.createElement("option");
+    opt.value = r.room;
+    opt.textContent =
+      `${r.room} · ${r.type} · Floor ${r.floor}` +
+      (info.inspections ? ` — inspected ${info.date}` : " — not inspected");
+    roomPick.appendChild(opt);
+  });
+
+  const other = document.createElement("option");
+  other.value = "__other__";
+  other.textContent = "Not in the list…";
+  roomPick.appendChild(other);
+
+  if (keep && [...roomPick.options].some((o) => o.value === keep)) roomPick.value = keep;
+  showRoomInfo();
+}
+
+function showRoomInfo() {
+  roomInfo.className = "room-info";
+  roomInfo.textContent = "";
+  const room = (roomInput.value || "").trim();
+  if (!room || !window.ADA || !window.ADA.loaded()) return;
+
+  const known = window.ADA.rows().some((r) => String(r.room).toUpperCase() === room.toUpperCase());
+  const info = window.ADA.info(room);
+
+  if (!known) {
+    roomInfo.classList.add("warn");
+    roomInfo.textContent =
+      "This room isn't in the restroom list. Pick it from the list when possible so the dashboard can track it.";
+  } else if (info.inspections) {
+    roomInfo.classList.add("warn");
+    roomInfo.textContent =
+      `Already inspected (${info.date}). Submitting again is recorded as a re-inspection; the newest one counts.`;
+  } else {
+    roomInfo.textContent = "Not inspected yet.";
+  }
+}
+
+roomPick.addEventListener("change", () => {
+  const v = roomPick.value;
+
+  if (v === "__other__") {
+    roomInput.hidden = false;
+    roomInput.value = "";
+    roomInput.focus();
+  } else if (v && window.ADA) {
+    const row = window.ADA.rows().find((r) => r.room === v);
+    roomInput.hidden = true;
+    roomInput.value = v;
+    if (row) {
+      floorSelect.value = String(row.floor);
+      restroomType.value = typeFor(row.type);
+    }
+  } else {
+    roomInput.hidden = true;
+    roomInput.value = "";
+  }
+
+  updateMeta();
+  showRoomInfo();
+});
+
+document.addEventListener("ada:data", populateRooms);
+
+// ---------- Draft (autosave) ----------
+let draftTimer = null;
+
+function hasContent() {
+  return !!(metaState.room.trim() || Object.keys(state).length);
+}
+
+function saveDraft() {
+  if (!FORM_CONFIG) return;
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => {
+    try {
+      // never remove here: an unfinished draft must survive a page load until the user resumes or discards it
+      if (!hasContent()) return;
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          v: 1,
+          id: session.id,
+          timestamp: session.timestamp,
+          meta: metaState,
+          state,
+          savedAt: Date.now()
+        })
+      );
+    } catch (e) {
+      /* storage unavailable: the survey still works, it just won't autosave */
+    }
+  }, 400);
+}
+
+function readDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (!d || d.v !== 1 || Date.now() - d.savedAt > DRAFT_MAX_AGE_MS) return null;
+    const answered = Object.keys(d.state || {}).filter((k) => !k.endsWith("_notes")).length;
+    if (!(d.meta && d.meta.room) && !answered) return null;
+    return d;
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearDraft() {
+  clearTimeout(draftTimer);
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+function checkDraft() {
+  const d = readDraft();
+  if (!d) return;
+
+  const answered = Object.keys(d.state || {}).filter((k) => !k.endsWith("_notes")).length;
+  const when = new Date(d.savedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+  draftText.textContent =
+    `You have an unfinished inspection${d.meta && d.meta.room ? ` (room ${d.meta.room})` : ""}: ` +
+    `${answered} answers, saved ${when}.`;
+  draftBanner.hidden = false;
+
+  document.getElementById("draftResume").onclick = () => {
+    session.id = d.id || newId();
+    session.timestamp = d.timestamp || null;
+    Object.keys(state).forEach((k) => delete state[k]);
+    Object.assign(state, d.state || {});
+    applyMeta(d.meta || {});
+    draftBanner.hidden = true;
+    render();
+  };
+
+  document.getElementById("draftDiscard").onclick = () => {
+    clearDraft();
+    draftBanner.hidden = true;
+  };
+}
+
+function applyMeta(meta) {
+  const room = (meta.room || "").trim();
+  roomInput.value = room;
+
+  const inList =
+    room &&
+    window.ADA &&
+    window.ADA.loaded() &&
+    window.ADA.rows().some((r) => r.room === room);
+
+  if (inList) {
+    roomInput.hidden = true;
+    roomPick.value = room;
+  } else if (room) {
+    roomInput.hidden = false;
+    roomPick.value = "__other__";
+  } else {
+    roomInput.hidden = true;
+    roomPick.value = "";
+  }
+
+  floorSelect.value = meta.floor || "";
+  restroomType.value = meta.type || "";
+  inspectionDate.value = meta.date || today();
+  updateMeta();
+  showRoomInfo();
+}
+
 // ---------- Render ----------
 function render() {
   if (!FORM_CONFIG) return;
 
   form.innerHTML = "";
   const sectionBodies = {};
+
+  const perSection = {};
+  FORM_CONFIG.questions.forEach((q) => {
+    const id = sectionIdForCode(q.code);
+    if (!id) return;
+    perSection[id] = perSection[id] || { done: 0, total: 0 };
+    perSection[id].total++;
+    if (["yes", "no", "na"].includes(state[q.id])) perSection[id].done++;
+  });
 
   // Sections (collapsible)
   FORM_CONFIG.sections.forEach((section) => {
@@ -114,7 +386,8 @@ function render() {
     header.style.color = "#0f3fb8";
 
     const t = document.createElement("span");
-    t.textContent = section.title;
+    const c = perSection[section.id];
+    t.textContent = c ? `${section.title}  ·  ${c.done}/${c.total}` : section.title;
 
     const toggleBtn = document.createElement("button");
     toggleBtn.type = "button";
@@ -154,10 +427,12 @@ function render() {
   });
 
   updatePreview();
+  updateProgress();
 }
 
 function renderQuestion(q) {
   const block = document.createElement("div");
+  block.id = `q-${q.id}`;
   block.style.marginBottom = "18px";
   block.style.paddingBottom = "14px";
   block.style.borderBottom = "1px solid #eee";
@@ -230,15 +505,15 @@ function renderQuestion(q) {
     block.appendChild(refWrap);
   }
 
-  // YES / NO / NA
-  const options = ["yes", "no", "na"];
+  // YES / NO / N/A / NOT SURE
   const row = document.createElement("div");
-  row.style.marginBottom = "8px";
+  row.className = "opts";
+  row.setAttribute("role", "radiogroup");
+  row.setAttribute("aria-label", `Answer for ${q.code}`);
 
-  options.forEach((opt) => {
+  ANSWER_OPTIONS.forEach(([opt, text, cls]) => {
     const label = document.createElement("label");
-    label.style.marginRight = "16px";
-    label.style.cursor = "pointer";
+    label.className = "opt";
 
     const input = document.createElement("input");
     input.type = "radio";
@@ -249,14 +524,28 @@ function renderQuestion(q) {
     input.addEventListener("change", () => {
       state[q.id] = opt;
       render(); // keep old behavior so solutions appear immediately
+      saveDraft();
+      const again = document.querySelector(`#q-${q.id} input[value="${opt}"]`);
+      if (again) again.focus({ preventScroll: true });
     });
 
+    const face = document.createElement("span");
+    face.className = cls;
+    face.textContent = text;
+
     label.appendChild(input);
-    label.appendChild(document.createTextNode(" " + opt.toUpperCase()));
+    label.appendChild(face);
     row.appendChild(label);
   });
 
   block.appendChild(row);
+
+  if (state[q.id] === "unsure") {
+    const note = document.createElement("div");
+    note.className = "unsure-note";
+    note.textContent = "Flagged for review. Add a note describing what you saw.";
+    block.appendChild(note);
+  }
 
   // Solutions if NO
   if (state[q.id] === "no" && Array.isArray(q.solutionsIfNo) && q.solutionsIfNo.length) {
@@ -296,6 +585,7 @@ function renderQuestion(q) {
   notes.addEventListener("input", (e) => {
     state[`${q.id}_notes`] = e.target.value;
     updatePreview();
+    saveDraft();
   });
 
   block.appendChild(notes);
@@ -329,27 +619,15 @@ function updatePreview() {
   preview.textContent = JSON.stringify(payload, null, 2);
 }
 
-// ---------- Submit ----------
-submitBtn.addEventListener("click", async () => {
-  if (!validateMeta()) {
-    alert("Please complete Floor, Room/Area, and Restroom Type.");
-    return;
-  }
+// ---------- Payload ----------
+function buildPayload() {
+  if (!session.timestamp) session.timestamp = new Date().toISOString();
 
-  if (!validateAnswers()) {
-    alert("Please answer all questions (YES / NO / NA).");
-    return;
-  }
-
-  const inspectionId = crypto.randomUUID();
-  const timestamp = new Date().toISOString();
-
-  // Respect spreadsheet format
-  const payload = FORM_CONFIG.questions.map((q) => ({
-    timestamp,
-    inspectionId,
+  return FORM_CONFIG.questions.map((q) => ({
+    timestamp: session.timestamp,
+    inspectionId: session.id,
     floor: metaState.floor,
-    room: metaState.room,
+    room: metaState.room.trim(),
     restroomType: metaState.type,
     code: q.code,
     section: sectionTitleForCode(q.code),
@@ -359,39 +637,272 @@ submitBtn.addEventListener("click", async () => {
       state[q.id] === "no"
         ? (q.solutionsIfNo || []).join("; ")
         : "",
-    notes: state[`${q.id}_notes`] || ""
+    notes: state[`${q.id}_notes`] || "",
+    inspectionDate: metaState.date
   }));
+}
 
-  console.log("Sending to:", WEB_APP_URL);
-  console.log("Rows:", payload.length);
-  console.log(payload);
+// ---------- Review & submit ----------
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text != null) node.textContent = text;
+  return node;
+}
+
+function actionButton(label, cls, handler) {
+  const b = el("button", cls, label);
+  b.type = "button";
+  b.addEventListener("click", handler);
+  return b;
+}
+
+function openModal() {
+  reviewModal.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeModal() {
+  if (sending) return;
+  reviewModal.hidden = true;
+  document.body.style.overflow = "";
+}
+
+function goToQuestion(q) {
+  closeModal();
+  const secId = sectionIdForCode(q.code);
+  if (secId) sectionState[secId] = true;
+  render();
+  const target = document.getElementById(`q-${q.id}`);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    const first = target.querySelector("input");
+    if (first) first.focus({ preventScroll: true });
+  }
+}
+
+function listSection(title, items, withGo) {
+  const wrap = document.createElement("div");
+  wrap.appendChild(el("h3", "", `${title} (${items.length})`));
+  const ul = el("ul", "rv-list");
+
+  items.forEach(({ q, extra }) => {
+    const li = document.createElement("li");
+    const left = document.createElement("div");
+    left.appendChild(document.createTextNode(`${q.code} — ${q.question}`));
+    if (extra) left.appendChild(el("small", "", extra));
+    li.appendChild(left);
+    if (withGo) li.appendChild(actionButton("Go to question", "link-btn", () => goToQuestion(q)));
+    ul.appendChild(li);
+  });
+
+  wrap.appendChild(ul);
+  return wrap;
+}
+
+function openReview() {
+  if (!validateMeta()) {
+    alert("Please choose the restroom, floor, type and inspection date first.");
+    return;
+  }
+  if (!validateAnswers()) return;
+
+  const t = tally();
+  const issues = [];
+  const unsure = [];
+  const blank = [];
+
+  FORM_CONFIG.questions.forEach((q) => {
+    const a = state[q.id];
+    if (a === "no") {
+      issues.push({ q, extra: (q.solutionsIfNo || [])[0] ? `Suggested: ${q.solutionsIfNo[0]}` : "" });
+    } else if (a === "unsure") {
+      unsure.push({ q, extra: state[`${q.id}_notes`] ? `Note: ${state[`${q.id}_notes`]}` : "No note yet" });
+    } else if (!a) {
+      blank.push({ q });
+    }
+  });
+
+  reviewTitle.textContent = "Review before submitting";
+  reviewBody.innerHTML = "";
+  reviewActions.innerHTML = "";
+
+  reviewBody.appendChild(
+    el("div", "rv-meta", `Room ${metaState.room} · Floor ${metaState.floor} · ${metaState.type} · ${metaState.date}`)
+  );
+
+  const chips = el("div", "rv-chips");
+  chips.appendChild(el("span", "rv-chip y", `${t.yes} Yes`));
+  chips.appendChild(el("span", "rv-chip n", `${t.no} No`));
+  chips.appendChild(el("span", "rv-chip", `${t.na} N/A`));
+  chips.appendChild(el("span", "rv-chip u", `${t.unsure} Not sure`));
+  chips.appendChild(el("span", "rv-chip", `${t.blank} Unanswered`));
+  reviewBody.appendChild(chips);
+
+  if (issues.length) reviewBody.appendChild(listSection("Issues found (answered No)", issues, true));
+  if (unsure.length) reviewBody.appendChild(listSection("Marked Not sure", unsure, true));
+  if (blank.length) {
+    reviewBody.appendChild(listSection("Unanswered", blank, true));
+    reviewBody.appendChild(
+      el("div", "rv-warn", "Unanswered questions are saved as blank and the restroom will show as in progress.")
+    );
+  }
+  if (!issues.length && !unsure.length && !blank.length) {
+    reviewBody.appendChild(el("p", "rv-ok", "Everything is answered and nothing was flagged."));
+  }
+
+  reviewActions.appendChild(actionButton("Back to edit", "secondary", closeModal));
+  reviewActions.appendChild(actionButton("Confirm and submit", "primary", sendInspection));
+  openModal();
+}
+
+function setBusy(on) {
+  sending = on;
+  reviewActions.querySelectorAll("button").forEach((b) => {
+    b.disabled = on;
+  });
+}
+
+function showFailure(message) {
+  reviewBody.querySelectorAll(".rv-error").forEach((n) => n.remove());
+  reviewBody.appendChild(
+    el(
+      "div",
+      "rv-error",
+      `${message} Your answers are safe on this device. Press "Confirm and submit" to try again; ` +
+        "it will not create a duplicate."
+    )
+  );
+}
+
+async function sendInspection() {
+  if (sending) return;
+  setBusy(true);
+  reviewBody.querySelectorAll(".rv-error").forEach((n) => n.remove());
+  const status = el("p", "rv-meta", "Sending… this can take a few seconds. Please don't close this page.");
+  status.id = "sendStatus";
+  reviewBody.appendChild(status);
+
+  const payload = buildPayload();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
 
   try {
-    await fetch(WEB_APP_URL, {
+    const res = await fetch(WEB_APP_URL, {
       method: "POST",
-      mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
+    const data = await res.json();
+    clearTimeout(timer);
 
-    alert("Saved ✅ (sent)");
+    if (data.status !== "success" && data.status !== "duplicate") {
+      throw new Error(data.message || "The server did not accept the inspection.");
+    }
+
+    clearDraft();
+    setBusy(false);
+    showSuccess(data);
+    if (window.ADA) window.ADA.refresh();
   } catch (err) {
-    console.error("FETCH FAILED:", err);
-    alert("Connection error ❌ (check console)");
+    clearTimeout(timer);
+    console.error("Send failed:", err);
+    status.remove();
+    setBusy(false);
+    showFailure(
+      err.name === "AbortError"
+        ? "The server took too long to answer."
+        : "The inspection could not be confirmed."
+    );
   }
+}
+
+function showSuccess(data) {
+  reviewTitle.textContent = "Saved";
+  reviewBody.innerHTML = "";
+  reviewActions.innerHTML = "";
+
+  reviewBody.appendChild(el("div", "success-mark", "✓"));
+
+  if (data.status === "duplicate") {
+    reviewBody.appendChild(
+      el("p", "rv-ok", "This inspection had already been received. Nothing was added twice.")
+    );
+  } else {
+    reviewBody.appendChild(
+      el("p", "rv-ok", `${data.saved} answers recorded for room ${metaState.room}.`)
+    );
+    if (data.flag === "Superseded" || data.flag === "Duplicate") {
+      reviewBody.appendChild(
+        el(
+          "div",
+          "rv-warn",
+          "This looks like a repeat of an inspection sent moments ago, so it was flagged. " +
+            "Nothing was deleted."
+        )
+      );
+    }
+  }
+
+  reviewActions.appendChild(
+    actionButton("View dashboard", "secondary", () => {
+      resetAll();
+      closeModal();
+      if (window.ADA) window.ADA.showTab("dashboard");
+    })
+  );
+  reviewActions.appendChild(
+    actionButton("Start next restroom", "primary", () => {
+      resetAll();
+      closeModal();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    })
+  );
+  // closing the modal by other means (Escape / backdrop) also starts a clean form
+  reviewModal.dataset.done = "1";
+}
+
+reviewModal.addEventListener("click", (e) => {
+  if (e.target !== reviewModal || sending) return;
+  if (reviewModal.dataset.done) resetAll();
+  closeModal();
 });
 
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || reviewModal.hidden || sending) return;
+  if (reviewModal.dataset.done) resetAll();
+  closeModal();
+});
+
+submitBtn.addEventListener("click", openReview);
+
 // ---------- Reset ----------
-resetBtn.addEventListener("click", () => {
+function resetAll() {
   Object.keys(state).forEach((k) => delete state[k]);
   Object.keys(sectionState).forEach((k) => delete sectionState[k]);
 
-  floorSelect.value = "";
+  session.id = newId();
+  session.timestamp = null;
+  delete reviewModal.dataset.done;
+  clearDraft();
+
+  roomPick.value = "";
   roomInput.value = "";
+  roomInput.hidden = true;
+  floorSelect.value = "";
   restroomType.value = "";
+  inspectionDate.value = today();
   updateMeta();
+  showRoomInfo();
+  populateRooms();
 
   render();
+}
+
+resetBtn.addEventListener("click", () => {
+  if (hasContent() && !confirm("Clear this inspection and start over?")) return;
+  resetAll();
 });
 
 // ---------- Load Config ----------
@@ -403,11 +914,18 @@ async function loadConfig() {
   descEl.textContent = FORM_CONFIG?.meta?.description || "";
 
   floorSelect.addEventListener("change", updateMeta);
-  roomInput.addEventListener("input", updateMeta);
+  roomInput.addEventListener("input", () => {
+    updateMeta();
+    showRoomInfo();
+  });
   restroomType.addEventListener("change", updateMeta);
+  inspectionDate.addEventListener("change", updateMeta);
 
+  inspectionDate.value = today();
   updateMeta();
   render();
+  populateRooms();
+  checkDraft();
 }
 
 loadConfig();

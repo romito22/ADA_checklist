@@ -1,16 +1,28 @@
 // ==========================
 // dashboard.js
-// Tabs (Dashboard / Survey / Restrooms), progress dashboard and a
-// Notion-style editable database of restrooms. Talks to the same Apps Script
-// web app as the survey (WEB_APP_URL, defined in app.js).
+// Tabs (Dashboard / Survey / Restrooms), progress dashboard, inspection history
+// (duplicate detection) and a Notion-style editable database of restrooms.
+// Talks to the same Apps Script web app as the survey (WEB_APP_URL, app.js).
 // ==========================
 
 (function () {
   const TABS = ["dashboard", "survey", "database"];
-  const STATUS_CLASS = { Complete: "complete", "In progress": "progress", "Not started": "none" };
-  const STATUS_ORDER = ["Complete", "In progress", "Not started"];
+  const STATUS_CLASS = {
+    Complete: "complete",
+    "In progress": "progress",
+    "Needs review": "review",
+    "Not started": "none"
+  };
+  const STATUS_ORDER = ["Complete", "Needs review", "In progress", "Not started"];
+  const HISTORY_CLASS = {
+    Current: "complete",
+    Previous: "none",
+    Superseded: "progress",
+    Duplicate: "progress",
+    Ignored: "none"
+  };
 
-  const DB = { rows: [], progress: {}, total: 82, live: false, loaded: false, loading: null };
+  const DB = { rows: [], progress: {}, history: [], total: 82, live: false, loaded: false, loading: null };
   const view = { mode: "table" };
 
   const byId = (id) => document.getElementById(id);
@@ -36,15 +48,21 @@
 
   function progressFor(row) {
     const p = DB.progress[normRoom(row.room)];
-    if (!p) return { answered: 0, pct: 0, yes: 0, no: 0, na: 0, inspections: 0, last: "" };
-    const pct = p.answered >= DB.total ? 100 : Math.min(99, Math.round((p.answered / DB.total) * 100));
-    return Object.assign({}, p, { pct });
+    if (!p || !p.hasCurrent) {
+      return { answered: 0, pct: 0, yes: 0, no: 0, na: 0, unsure: 0, inspections: p ? p.inspections : 0, date: "", has: false };
+    }
+    const answered = Math.min(p.answered, DB.total);
+    const pct = answered >= DB.total ? 100 : Math.min(99, Math.round((answered / DB.total) * 100));
+    return Object.assign({}, p, { answered, pct, has: true });
   }
 
   function statusOf(row) {
     const p = progressFor(row);
-    if (!p.inspections) return "Not started";
-    return p.pct >= 100 ? "Complete" : "In progress";
+    if (!p.has) return "Not started";
+    const blank = DB.total - p.answered - (p.unsure || 0);
+    if (blank > 0) return "In progress";
+    if (p.unsure > 0) return "Needs review";
+    return "Complete";
   }
 
   function barClass(pct) {
@@ -75,9 +93,7 @@
     return stack;
   }
 
-  function tag(text, cls) {
-    return el("span", `tag ${cls || ""}`, text);
-  }
+  const tag = (text, cls) => el("span", `tag ${cls || ""}`, text);
 
   function setNote(id, text, isError) {
     const node = byId(id);
@@ -87,6 +103,11 @@
 
   const sortedFloors = () =>
     [...new Set(DB.rows.map((r) => String(r.floor)).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+
+  const typeOf = (room) => {
+    const r = DB.rows.find((x) => normRoom(x.room) === normRoom(room));
+    return r ? r.type : "";
+  };
 
   // ---------- Load ----------
   async function load() {
@@ -115,6 +136,7 @@
 
   function setProgress(progress) {
     DB.total = (progress && progress.total) || 82;
+    DB.history = (progress && progress.inspections) || [];
     DB.progress = {};
     ((progress && progress.rooms) || []).forEach((p) => {
       DB.progress[normRoom(p.room)] = p;
@@ -126,9 +148,16 @@
     if (!DB.loading) {
       DB.loading = load().then(() => {
         renderAll();
+        document.dispatchEvent(new Event("ada:data"));
       });
     }
     return DB.loading;
+  }
+
+  async function refresh() {
+    DB.loaded = false;
+    DB.loading = null;
+    await ensureLoaded();
   }
 
   function renderAll() {
@@ -139,6 +168,7 @@
     setNote("dbStatus", DB.live ? "Connected to the spreadsheet. Changes save automatically." : note, !DB.live);
     fillFilters();
     renderDashboard();
+    renderHistory();
     renderDatabase();
   }
 
@@ -151,11 +181,12 @@
     const statuses = rows.map(statusOf);
     const count = (s) => statuses.filter((x) => x === s).length;
     const inspected = n - count("Not started");
-    const answered = infos.reduce((a, p) => a + Math.min(p.answered, DB.total), 0);
+    const answered = infos.reduce((a, p) => a + p.answered, 0);
     const yes = infos.reduce((a, p) => a + p.yes, 0);
     const no = infos.reduce((a, p) => a + p.no, 0);
     const compliance = yes + no ? Math.round((yes / (yes + no)) * 100) : 0;
-    const inspections = infos.reduce((a, p) => a + p.inspections, 0);
+    const received = Object.values(DB.progress).reduce((a, p) => a + p.inspections, 0);
+    const flagged = DB.history.filter((h) => ["Superseded", "Duplicate", "Ignored"].includes(h.status)).length;
 
     const kpis = byId("kpis");
     kpis.innerHTML = "";
@@ -172,8 +203,10 @@
     [
       ["Complete", count("Complete")],
       ["In progress", count("In progress")],
+      ["Needs review", count("Needs review")],
       ["Not started", count("Not started")],
-      ["Inspections logged", inspections],
+      ["Inspections received", received],
+      ["Duplicates flagged", flagged],
       ["Yes rate (yes ÷ yes+no)", `${compliance}%`]
     ].forEach(([label, value]) => {
       const k = el("div", "kpi");
@@ -203,14 +236,130 @@
       const p = progressFor(r);
       const status = statusOf(r);
       const line = el("div", "room-row");
+
       const name = el("div", "name", r.room);
       name.appendChild(el("small", "", `${floorLabel(r.floor)} · ${r.type}`));
+      if (p.has && p.date) name.appendChild(el("small", "", `Inspected ${p.date}`));
       line.appendChild(name);
-      line.appendChild(makeBar(p.pct));
-      line.appendChild(el("div", "pct", `${p.pct}%`));
-      line.appendChild(makeStack(p));
+
+      const prog = el("div", "cell c-prog");
+      prog.appendChild(makeBar(p.pct));
+      prog.appendChild(
+        el("div", "sub", p.has ? `${p.answered} of ${DB.total} answered · ${p.pct}%` : "Not inspected yet")
+      );
+      line.appendChild(prog);
+
+      const mix = el("div", "cell c-mix");
+      mix.appendChild(makeStack(p));
+      const parts = p.has
+        ? [`${p.yes} yes`, `${p.no} no`, `${p.na} n/a`].concat(p.unsure ? [`${p.unsure} not sure`] : [])
+        : [];
+      mix.appendChild(el("div", "sub", parts.length ? parts.join(" · ") : "—"));
+      line.appendChild(mix);
+
       line.appendChild(tag(status, STATUS_CLASS[status]));
       roomBars.appendChild(line);
+    });
+  }
+
+  // ---------- Inspection history & duplicates ----------
+  async function setOverride(id, value, buttons) {
+    if (!DB.live) {
+      alert("Changing this needs the live connection to the spreadsheet.");
+      return;
+    }
+    buttons.forEach((b) => {
+      b.disabled = true;
+    });
+    try {
+      const data = await post({ action: "setInspectionOverride", inspectionId: id, override: value });
+      if (!data.ok) throw new Error(data.error || "Could not save");
+      await refresh();
+    } catch (err) {
+      console.error(err);
+      alert("Could not save that change.");
+      buttons.forEach((b) => {
+        b.disabled = false;
+      });
+    }
+  }
+
+  function renderHistory() {
+    const list = byId("historyList");
+    list.innerHTML = "";
+
+    const hist = DB.history;
+    const auto = hist.filter((h) => h.status === "Superseded" || h.status === "Duplicate").length;
+    const prev = hist.filter((h) => h.status === "Previous").length;
+    const ignored = hist.filter((h) => h.status === "Ignored").length;
+
+    if (!hist.length) {
+      byId("historySummary").textContent = DB.live
+        ? "No restroom has more than one inspection."
+        : "The history needs the live connection to the spreadsheet.";
+      return;
+    }
+
+    byId("historySummary").textContent =
+      `${auto + prev + ignored} extra inspections in ${new Set(hist.map((h) => h.room)).size} restrooms: ` +
+      `${auto} flagged automatically as duplicates or replaced submissions, ${prev} earlier inspections kept as history` +
+      (ignored ? `, ${ignored} ignored by you` : "") +
+      ". Nothing is deleted; the Current one is what the dashboard counts.";
+
+    const rooms = [...new Set(hist.map((h) => h.room))];
+    rooms.forEach((room) => {
+      const items = hist.filter((h) => h.room === room);
+      const box = el("details", "hist");
+      const sum = document.createElement("summary");
+      sum.appendChild(el("strong", "", room));
+      sum.appendChild(el("span", "hist-meta", `${typeOf(room)} · ${items.length} inspections`));
+      box.appendChild(sum);
+
+      items.forEach((h) => {
+        const line = el("div", "hist-row");
+
+        const when = el("div", "hist-when", h.date || "");
+        const t = h.submitted ? new Date(h.submitted).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
+        when.appendChild(el("small", "", t ? `sent ${t}` : ""));
+        line.appendChild(when);
+
+        const info = el("div", "hist-info");
+        const bits = [`${h.answered}/${DB.total} answered`, `${h.yes} yes`, `${h.no} no`, `${h.na} n/a`];
+        if (h.unsure) bits.push(`${h.unsure} not sure`);
+        info.appendChild(el("div", "", bits.join(" · ")));
+        if (h.note) info.appendChild(el("small", "", h.note));
+        line.appendChild(info);
+
+        line.appendChild(tag(h.status, HISTORY_CLASS[h.status]));
+
+        const actions = el("div", "hist-actions");
+        const buttons = [];
+        if (h.status !== "Current") {
+          const b = el("button", "btn-sm secondary", "Make current");
+          b.type = "button";
+          b.addEventListener("click", () => setOverride(h.id, "current", buttons));
+          buttons.push(b);
+          actions.appendChild(b);
+        }
+        if (h.status !== "Ignored") {
+          const b = el("button", "btn-sm secondary", "Ignore");
+          b.type = "button";
+          b.addEventListener("click", () => setOverride(h.id, "ignore", buttons));
+          buttons.push(b);
+          actions.appendChild(b);
+        }
+        if (h.override) {
+          const b = el("button", "btn-sm secondary", "Undo my choice");
+          b.type = "button";
+          b.addEventListener("click", () => setOverride(h.id, "", buttons));
+          buttons.push(b);
+          actions.appendChild(b);
+        }
+        line.appendChild(actions);
+        box.appendChild(line);
+      });
+
+      list.appendChild(box);
     });
   }
 
@@ -279,9 +428,10 @@
   }
 
   function groupKey(row, by) {
-    if (by === "type") return ["men", "women", "other"].indexOf(kindOf(row.type)) + "|" + {
-      men: "Men", women: "Women", other: "Other"
-    }[kindOf(row.type)];
+    if (by === "type") {
+      const k = kindOf(row.type);
+      return ["men", "women", "other"].indexOf(k) + "|" + { men: "Men", women: "Women", other: "Other" }[k];
+    }
     if (by === "status") return STATUS_ORDER.indexOf(statusOf(row)) + "|" + statusOf(row);
     return String(row.floor).padStart(3, "0") + "|" + floorLabel(row.floor);
   }
@@ -298,13 +448,11 @@
       .map(([k, list]) => ({ title: k.split("|")[1], rows: list }));
   }
 
-  // ---------- Database: render ----------
+  // ---------- Database: render (data + status only; bars live in the Dashboard) ----------
   function renderDatabase() {
     const rows = visibleRows();
-    const table = byId("dbTableWrap");
-    const board = byId("dbBoard");
-    table.hidden = view.mode !== "table";
-    board.hidden = view.mode !== "board";
+    byId("dbTableWrap").hidden = view.mode !== "table";
+    byId("dbBoard").hidden = view.mode !== "board";
 
     if (view.mode === "board") renderBoard(rows);
     else renderTable(rows);
@@ -333,9 +481,7 @@
     if (!c) return;
     c.status.innerHTML = "";
     c.status.appendChild(tag(status, STATUS_CLASS[status]));
-    c.prog.innerHTML = "";
-    c.prog.appendChild(el("div", "pct", `${p.pct}% · ${Math.min(p.answered, DB.total)}/${DB.total}`));
-    c.prog.appendChild(makeBar(p.pct));
+    c.last.textContent = p.has && p.date ? p.date : "—";
   }
 
   function renderTable(rows) {
@@ -373,13 +519,14 @@
         const type = cell("c-type");
         type.appendChild(textInput(row, "type"));
         const status = cell("c-status");
-        const prog = cell("c-prog");
+        const last = cell("c-last");
 
         const done = cell("c-done");
         const check = document.createElement("input");
         check.type = "checkbox";
         check.checked = String(row.done).toLowerCase() === "done";
         check.disabled = !DB.live;
+        check.title = "Your own checkmark (separate from the Status)";
         check.addEventListener("change", () => save(row, "done", check.checked ? "done" : "", check));
         done.appendChild(check);
 
@@ -387,8 +534,8 @@
         notes.appendChild(textInput(row, "notes"));
         const state = cell("c-state");
 
-        tr.append(room, floor, type, status, prog, done, notes, state);
-        row._cells = { status, prog, state };
+        tr.append(room, floor, type, status, last, done, notes, state);
+        row._cells = { status, last, state };
         fillStatusCells(row);
         body.appendChild(tr);
       });
@@ -420,8 +567,7 @@
         tags.appendChild(tag(status, STATUS_CLASS[status]));
         card.appendChild(tags);
 
-        card.appendChild(el("div", "pct", `${p.pct}%`));
-        card.appendChild(makeBar(p.pct));
+        card.appendChild(el("div", "note", p.has && p.date ? `Last inspected ${p.date}` : "Not inspected yet"));
         if (row.notes) card.appendChild(el("div", "note", row.notes));
         col.appendChild(card);
       });
@@ -468,6 +614,7 @@
       fillStatusCells(row);
       renderDashboard();
       fillFilters();
+      document.dispatchEvent(new Event("ada:data"));
     } catch (err) {
       console.error("Save failed:", err);
       row[field] = previous;
@@ -502,6 +649,7 @@
       fillFilters();
       renderDashboard();
       renderDatabase();
+      document.dispatchEvent(new Event("ada:data"));
     } catch (err) {
       console.error("Add failed:", err);
       alert("Could not add the restroom. Is the live connection available?");
@@ -524,7 +672,7 @@
     } catch (e) {
       /* ignore */
     }
-    if (name !== "survey") ensureLoaded();
+    ensureLoaded();
   }
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
@@ -554,6 +702,18 @@
     byId("dbNew").hidden = true;
   });
   byId("newSave").addEventListener("click", addRestroom);
+
+  // Used by the survey (app.js): room list, per-room info, refresh after a submit.
+  window.ADA = {
+    loaded: () => DB.loaded,
+    rows: () => DB.rows,
+    info: (room) => {
+      const p = DB.progress[normRoom(room)];
+      return { inspections: p ? p.inspections : 0, date: p && p.date ? p.date : "" };
+    },
+    refresh,
+    showTab
+  };
 
   showTab(location.hash.slice(1));
 })();
