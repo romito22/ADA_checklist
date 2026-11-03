@@ -1,32 +1,242 @@
 [
-  {"row":2,"floor":"1","type":"Single Use Restroom","room":"1117","done":"done","notes":""},
-  {"row":3,"floor":"1","type":"Women's Lounge/Restroom Entry","room":"1183","done":"done","notes":""},
-  {"row":4,"floor":"1","type":"Women's Restroom","room":"1183A","done":"done","notes":""},
-  {"row":5,"floor":"1","type":"Men's Restroom","room":"1187","done":"done","notes":""},
-  {"row":6,"floor":"1","type":"Women's Restroom","room":"1402","done":"done","notes":""},
-  {"row":7,"floor":"1","type":"Men's Restroom","room":"1406","done":"done","notes":""},
-  {"row":8,"floor":"1","type":"Women's Restroom","room":"1945","done":"done","notes":""},
-  {"row":9,"floor":"1","type":"Men's Restroom","room":"1961A","done":"done","notes":""},
-  {"row":10,"floor":"2","type":"Men's Restroom","room":"2060","done":"done","notes":""},
-  {"row":11,"floor":"2","type":"Mother's Room","room":"2079","done":"done","notes":""},
-  {"row":12,"floor":"2","type":"Restroom Vestibule","room":"2080","done":"done","notes":""},
-  {"row":13,"floor":"2","type":"Women's Restroom","room":"2080A","done":"done","notes":""},
-  {"row":14,"floor":"2","type":"Mother's Room - 2 Stations","room":"2080B","done":"done","notes":""},
-  {"row":15,"floor":"2","type":"Single Use Restroom","room":"2144","done":"done","notes":""},
-  {"row":16,"floor":"2","type":"Men's Restroom","room":"2153","done":"done","notes":""},
-  {"row":17,"floor":"2","type":"Women's Restroom","room":"2157","done":"done","notes":""},
-  {"row":18,"floor":"2","type":"Men's Restroom","room":"2610","done":"done","notes":""},
-  {"row":19,"floor":"2","type":"Women's Restroom","room":"2624","done":"done","notes":""},
-  {"row":20,"floor":"3","type":"Men's Restroom","room":"3204","done":"done","notes":""},
-  {"row":21,"floor":"3","type":"Women's Restroom","room":"3212","done":"done","notes":""},
-  {"row":22,"floor":"3","type":"Men's Restroom","room":"3360","done":"done","notes":""},
-  {"row":23,"floor":"3","type":"Women's Restroom","room":"3364","done":"done","notes":""},
-  {"row":24,"floor":"3","type":"Men's Restroom","room":"3984","done":"done","notes":""},
-  {"row":25,"floor":"3","type":"Women's Restroom","room":"3985","done":"done","notes":""},
-  {"row":26,"floor":"4","type":"Men's Restroom","room":"4407","done":"done","notes":""},
-  {"row":27,"floor":"4","type":"Women's Restroom","room":"4409","done":"done","notes":""},
-  {"row":28,"floor":"5","type":"Single Use Restroom","room":"5558","done":"done","notes":""},
-  {"row":29,"floor":"5","type":"Single Use Restroom","room":"5560","done":"done","notes":""},
-  {"row":30,"floor":"6","type":"Men's Restroom","room":"6624","done":"done","notes":""},
-  {"row":31,"floor":"6","type":"Women's Restroom","room":"6630","done":"done","notes":""}
+ {
+  "row": 2,
+  "floor": "1",
+  "type": "Single Use Restroom",
+  "room": "1117",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 3,
+  "floor": "1",
+  "type": "Women's Lounge/Restroom Entry",
+  "room": "1183",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 4,
+  "floor": "1",
+  "type": "Women's Restroom",
+  "room": "1183A",
+  "done": "",
+  "notes": "Not in answers (answers only has 1183)"
+ },
+ {
+  "row": 5,
+  "floor": "1",
+  "type": "Men's Restroom",
+  "room": "1187",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 6,
+  "floor": "1",
+  "type": "Women's Restroom",
+  "room": "1402",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 7,
+  "floor": "1",
+  "type": "Men's Restroom",
+  "room": "1406",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 8,
+  "floor": "1",
+  "type": "Women's Restroom",
+  "room": "1945",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 9,
+  "floor": "1",
+  "type": "Men's Restroom",
+  "room": "1961A",
+  "done": "",
+  "notes": "Not in answers as 1961A (answers has 1961, Men)"
+ },
+ {
+  "row": 10,
+  "floor": "2",
+  "type": "Men's Restroom",
+  "room": "2060",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 11,
+  "floor": "2",
+  "type": "Mother's Room",
+  "room": "2079",
+  "done": "",
+  "notes": "Not in answers"
+ },
+ {
+  "row": 12,
+  "floor": "2",
+  "type": "Restroom Vestibule",
+  "room": "2080",
+  "done": "done",
+  "notes": "answers lists 2080 as Women's (may be 2080A)"
+ },
+ {
+  "row": 13,
+  "floor": "2",
+  "type": "Women's Restroom",
+  "room": "2080A",
+  "done": "",
+  "notes": "Not in answers (see 2080)"
+ },
+ {
+  "row": 14,
+  "floor": "2",
+  "type": "Mother's Room - 2 Stations",
+  "room": "2080B",
+  "done": "",
+  "notes": "Not in answers"
+ },
+ {
+  "row": 15,
+  "floor": "2",
+  "type": "Single Use Restroom",
+  "room": "2144",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 16,
+  "floor": "2",
+  "type": "Men's Restroom",
+  "room": "2153",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 17,
+  "floor": "2",
+  "type": "Women's Restroom",
+  "room": "2157",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 18,
+  "floor": "2",
+  "type": "Men's Restroom",
+  "room": "2610",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 19,
+  "floor": "2",
+  "type": "Women's Restroom",
+  "room": "2624",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 20,
+  "floor": "3",
+  "type": "Men's Restroom",
+  "room": "3204",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 21,
+  "floor": "3",
+  "type": "Women's Restroom",
+  "room": "3212",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 22,
+  "floor": "3",
+  "type": "Men's Restroom",
+  "room": "3360",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 23,
+  "floor": "3",
+  "type": "Women's Restroom",
+  "room": "3364",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 24,
+  "floor": "3",
+  "type": "Men's Restroom",
+  "room": "3984",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 25,
+  "floor": "3",
+  "type": "Women's Restroom",
+  "room": "3985",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 26,
+  "floor": "4",
+  "type": "Men's Restroom",
+  "room": "4407",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 27,
+  "floor": "4",
+  "type": "Women's Restroom",
+  "room": "4409",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 28,
+  "floor": "5",
+  "type": "Single Use Restroom",
+  "room": "5558",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 29,
+  "floor": "5",
+  "type": "Single Use Restroom",
+  "room": "5560",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 30,
+  "floor": "6",
+  "type": "Men's Restroom",
+  "room": "6624",
+  "done": "done",
+  "notes": ""
+ },
+ {
+  "row": 31,
+  "floor": "6",
+  "type": "Women's Restroom",
+  "room": "6630",
+  "done": "done",
+  "notes": ""
+ }
 ]

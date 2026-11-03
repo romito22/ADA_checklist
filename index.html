@@ -166,157 +166,417 @@
       border: 1px solid #cfe0ff;
     }
 
-    /* ---------- Restroom list modal ---------- */
-    #restroomModal {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 25, 50, 0.55);
+    /* ---------- Tabs ---------- */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      border-bottom: 2px solid #e6eaf3;
+      margin: 4px 0 22px;
+    }
+
+    .tab {
+      background: none;
+      color: #5b657a;
+      border-radius: 10px 10px 0 0;
+      padding: 10px 18px;
+      font-size: 15px;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+
+    .tab:hover {
+      background: #f1f5ff;
+      color: #0f3fb8;
+    }
+
+    .tab.active {
+      background: #edf3ff;
+      color: #0f3fb8;
+      border-bottom-color: #1e5eff;
+    }
+
+    .panel {
       display: none;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 24px 12px;
-      overflow-y: auto;
-      z-index: 50;
     }
 
-    #restroomModal.open {
+    .panel.active {
+      display: block;
+    }
+
+    .status-note {
+      font-size: 13px;
+      font-weight: 700;
+      color: #5b657a;
+      margin: 0 0 14px;
+    }
+
+    .status-note.error {
+      color: #b3261e;
+    }
+
+    /* ---------- Progress bars ---------- */
+    .bar {
+      height: 12px;
+      background: #e6eaf3;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: #1e5eff;
+      border-radius: 999px;
+      transition: width .4s ease;
+    }
+
+    .bar.complete > span { background: #1b9a4a; }
+    .bar.progress > span { background: #e0a100; }
+    .bar.none > span { background: #c8d0e0; }
+    .bar.big { height: 22px; }
+
+    .stack {
       display: flex;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e6eaf3;
     }
 
-    .rl-card {
-      background: #fff;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 980px;
-      padding: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    }
+    .stack .y { background: #1b9a4a; }
+    .stack .n { background: #d93025; }
+    .stack .a { background: #b6bfd1; }
 
-    .rl-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    /* ---------- Dashboard ---------- */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
       gap: 12px;
-      margin-bottom: 14px;
+      margin-bottom: 8px;
     }
 
-    .rl-header h2 {
-      margin: 0;
+    .kpi {
+      background: #f8f9fc;
+      border: 1px solid #e6eaf3;
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+
+    .kpi.total {
+      grid-column: 1 / -1;
+    }
+
+    .kpi .label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #5b657a;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .kpi .value {
+      font-size: 1.9rem;
+      font-weight: 900;
+      color: #0f3fb8;
+      margin: 4px 0 8px;
+    }
+
+    .kpi .sub {
+      font-size: 13px;
+      color: #5b657a;
+      margin-top: 8px;
+    }
+
+    .section-title {
+      margin: 26px 0 8px;
       color: #1e3fb8;
-      font-size: 1.4rem;
+      font-size: 1.1rem;
     }
 
-    #rlClose {
+    .legend {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #5b657a;
+      margin-bottom: 4px;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      margin-right: 5px;
+    }
+
+    .floor-row,
+    .room-row {
+      display: grid;
+      align-items: center;
+      gap: 14px;
+      padding: 9px 0;
+      border-bottom: 1px solid #eef1f7;
+      font-size: 14px;
+    }
+
+    .floor-row {
+      grid-template-columns: 110px 1fr 130px;
+    }
+
+    .room-row {
+      grid-template-columns: 190px 1fr 56px 170px 110px;
+    }
+
+    .room-row .name {
+      font-weight: 800;
+    }
+
+    .room-row .name small {
+      display: block;
+      font-weight: 400;
+      color: #5b657a;
+      font-size: 12px;
+    }
+
+    .room-row .pct {
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .floor-row .meta-text {
+      font-size: 13px;
+      color: #5b657a;
+      text-align: right;
+    }
+
+    /* ---------- Tags ---------- */
+    .tag {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+      background: #eceff5;
+      color: #3b4a6b;
+    }
+
+    .tag.men { background: #dbe8ff; color: #0f3fb8; }
+    .tag.women { background: #ffe0ef; color: #a1175f; }
+    .tag.other { background: #dff5e6; color: #17633a; }
+    .tag.complete { background: #dff5e6; color: #17633a; }
+    .tag.progress { background: #fff0c7; color: #7a5200; }
+    .tag.none { background: #eceff5; color: #4b556b; }
+
+    /* ---------- Database ---------- */
+    .db-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .db-toolbar select,
+    .db-toolbar input[type="search"] {
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    .db-toolbar select {
+      padding-right: 32px;
+    }
+
+    .db-toolbar input[type="search"] {
+      min-width: 200px;
+    }
+
+    .seg {
+      display: inline-flex;
+      border: 1.5px solid #c8d0e0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .seg button {
+      background: #fff;
+      color: #3b4a6b;
+      border-radius: 0;
+      padding: 8px 14px;
+      font-size: 14px;
+    }
+
+    .seg button.on {
+      background: #1e5eff;
+      color: #fff;
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      font-size: 14px;
+      background: #000;
+      color: #fff;
+    }
+
+    .btn-sm.secondary {
       background: #ddd;
       color: #111;
     }
 
-    .rl-controls {
+    .db-new {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      align-items: flex-end;
+      gap: 10px;
+      align-items: center;
       background: #f8f9fc;
-      padding: 12px;
+      border: 1px solid #e6eaf3;
       border-radius: 12px;
+      padding: 12px;
       margin-bottom: 12px;
     }
 
-    .rl-controls label {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-weight: 800;
-      font-size: 13px;
-      color: #1e5eff;
-    }
+    .db-new[hidden] { display: none; }
 
-    .rl-controls label.rl-check {
-      flex-direction: row;
-      align-items: center;
-      gap: 8px;
-      padding-bottom: 10px;
-    }
-
-    .rl-controls select {
-      padding: 8px 36px 8px 10px;
+    .db-new input,
+    .db-new select {
+      padding: 8px 10px;
       font-size: 14px;
     }
 
-    #rlStatus {
-      font-size: 13px;
-      font-weight: 700;
-      color: #5b657a;
-      margin: 0 0 10px;
-    }
+    .db-new select { padding-right: 32px; }
 
-    #rlStatus.error {
-      color: #b3261e;
-    }
-
-    .rl-table-wrap {
+    .db-table-wrap {
       overflow-x: auto;
     }
 
-    table.rl-table {
+    table.db-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 14px;
     }
 
-    .rl-table th {
+    .db-table th {
       text-align: left;
       padding: 8px;
-      background: #edf3ff;
-      color: #0f3fb8;
+      color: #5b657a;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      border-bottom: 2px solid #e6eaf3;
       white-space: nowrap;
     }
 
-    .rl-table td {
-      padding: 4px;
-      border-bottom: 1px solid #e6eaf3;
+    .db-table td {
+      padding: 3px 4px;
+      border-bottom: 1px solid #eef1f7;
       vertical-align: middle;
     }
 
-    .rl-table td input[type="text"] {
+    .db-table td input[type="text"] {
       width: 100%;
-      padding: 7px 8px;
+      padding: 6px 8px;
       font-size: 14px;
-      border-radius: 8px;
+      border: 1.5px solid transparent;
+      background: transparent;
+      border-radius: 6px;
+      box-shadow: none;
     }
 
-    .rl-table td.rl-floor input { width: 56px; }
-    .rl-table td.rl-room input { width: 96px; }
-    .rl-table td.rl-type input { min-width: 190px; }
-    .rl-table td.rl-notes input { min-width: 200px; }
-
-    .rl-table td.rl-cat {
-      white-space: nowrap;
-      font-weight: 700;
-      color: #3b4a6b;
-      padding: 4px 8px;
+    .db-table td input[type="text"]:hover:not(:disabled) {
+      background: #f4f6fb;
     }
 
-    .rl-table td.rl-done {
-      text-align: center;
+    .db-table td input[type="text"]:focus {
+      background: #fff;
+      border-color: #1e5eff;
     }
 
-    .rl-table td.rl-state {
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
-      color: #5b657a;
-      padding: 4px 8px;
-    }
+    .db-table td.c-room input { min-width: 90px; font-weight: 800; }
+    .db-table td.c-floor input { width: 54px; }
+    .db-table td.c-type input { min-width: 180px; }
+    .db-table td.c-notes input { min-width: 200px; }
+    .db-table td.c-prog { min-width: 130px; }
+    .db-table td.c-prog .pct { font-size: 12px; font-weight: 800; color: #3b4a6b; margin-bottom: 3px; }
+    .db-table td.c-done { text-align: center; }
+    .db-table td.c-status { white-space: nowrap; padding: 3px 8px; }
+    .db-table td.c-state { font-size: 12px; font-weight: 700; white-space: nowrap; color: #5b657a; padding: 3px 8px; }
+    .db-table td.c-state.ok { color: #1b7a3a; }
+    .db-table td.c-state.error { color: #b3261e; }
 
-    .rl-table td.rl-state.error { color: #b3261e; }
-    .rl-table td.rl-state.ok { color: #1b7a3a; }
-
-    .rl-table tr.rl-group td {
+    .db-table tr.group td {
       background: #f1f4fb;
       font-weight: 900;
       color: #1e3fb8;
       padding: 8px;
+    }
+
+    .board {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      align-items: flex-start;
+      padding-bottom: 8px;
+    }
+
+    .board[hidden] { display: none; }
+
+    .board .col {
+      min-width: 240px;
+      flex: 1;
+      background: #f4f6fb;
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .board .col h4 {
+      margin: 2px 4px 8px;
+      color: #1e3fb8;
+      font-size: 14px;
+    }
+
+    .board .card {
+      background: #fff;
+      border: 1px solid #e6eaf3;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 8px;
+    }
+
+    .board .card .room {
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .board .card .row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .board .card .note {
+      font-size: 12px;
+      color: #5b657a;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 900px) {
+      .room-row {
+        grid-template-columns: 1fr 52px 104px;
+        gap: 8px 12px;
+      }
+
+      .room-row .name { order: 1; }
+      .room-row .pct { order: 2; }
+      .room-row .tag { order: 3; justify-self: end; }
+      .room-row .bar { order: 4; grid-column: 1 / -1; }
+      .room-row .stack { order: 5; grid-column: 1 / -1; }
+
+      .floor-row {
+        grid-template-columns: 70px 1fr 110px;
+      }
     }
 
     @media (max-width: 700px) {
@@ -358,12 +618,100 @@
       >
         Open Pictures &amp; PDF
       </a>
-
-      <button id="restroomListBtn" class="resource-link" type="button">
-        Restroom List
-      </button>
     </div>
 
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="tab" role="tab" data-tab="survey" type="button">Survey</button>
+      <button class="tab" role="tab" data-tab="database" type="button">Restrooms</button>
+    </nav>
+
+    <section id="panel-dashboard" class="panel" role="tabpanel">
+      <p id="dashStatus" class="status-note">Loading…</p>
+      <div id="kpis" class="kpis"></div>
+
+      <h3 class="section-title">Progress by floor</h3>
+      <div id="floorBars"></div>
+
+      <h3 class="section-title">Progress by restroom</h3>
+      <div class="legend">
+        <span><i style="background:#1b9a4a"></i>Yes</span>
+        <span><i style="background:#d93025"></i>No</span>
+        <span><i style="background:#b6bfd1"></i>N/A</span>
+        <span>(bar = questions answered out of the full survey)</span>
+      </div>
+      <div id="roomBars"></div>
+    </section>
+
+    <section id="panel-database" class="panel" role="tabpanel">
+      <p id="dbStatus" class="status-note">Loading…</p>
+
+      <div class="db-toolbar">
+        <div class="seg" id="dbViews">
+          <button type="button" data-view="table" class="on">Table</button>
+          <button type="button" data-view="board">Board</button>
+        </div>
+        <input id="dbSearch" type="search" placeholder="Search room, type, notes…">
+        <select id="dbType" title="Type">
+          <option value="all">All types</option>
+          <option value="men">Men</option>
+          <option value="women">Women</option>
+          <option value="other">Other</option>
+        </select>
+        <select id="dbFloor" title="Floor"><option value="all">All floors</option></select>
+        <select id="dbStatusFilter" title="Status">
+          <option value="all">All statuses</option>
+          <option value="Complete">Complete</option>
+          <option value="In progress">In progress</option>
+          <option value="Not started">Not started</option>
+        </select>
+        <select id="dbSort" title="Sort">
+          <option value="floor">Sort: floor</option>
+          <option value="room">Sort: room</option>
+          <option value="type">Sort: type</option>
+          <option value="progress">Sort: progress</option>
+          <option value="status">Sort: status</option>
+        </select>
+        <select id="dbGroup" title="Group by">
+          <option value="floor">Group: floor</option>
+          <option value="type">Group: type</option>
+          <option value="status">Group: status</option>
+          <option value="none">No grouping</option>
+        </select>
+        <button id="dbAdd" class="btn-sm" type="button">+ New</button>
+      </div>
+
+      <div id="dbNew" class="db-new" hidden>
+        <select id="newFloor" title="Floor"></select>
+        <input id="newRoom" type="text" placeholder="Room (e.g. 1117)">
+        <input id="newType" type="text" list="typeOptions" placeholder="Type (e.g. Men's Restroom)">
+        <datalist id="typeOptions"></datalist>
+        <button id="newSave" class="btn-sm" type="button">Add</button>
+        <button id="newCancel" class="btn-sm secondary" type="button">Cancel</button>
+      </div>
+
+      <div id="dbTableWrap" class="db-table-wrap">
+        <table class="db-table">
+          <thead>
+            <tr>
+              <th>Room</th>
+              <th>Floor</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Progress</th>
+              <th>Done</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="dbBody"></tbody>
+        </table>
+      </div>
+
+      <div id="dbBoard" class="board" hidden></div>
+    </section>
+
+    <section id="panel-survey" class="panel" role="tabpanel">
     <div class="meta">
       <div class="meta-field">
         <label for="floorSelect">Floor (1–6)</label>
@@ -403,71 +751,10 @@
     </div>
 
     <div id="preview"></div>
-  </div>
-
-  <div id="restroomModal" aria-hidden="true">
-    <div class="rl-card" role="dialog" aria-labelledby="rlTitle">
-      <div class="rl-header">
-        <h2 id="rlTitle">Restroom List</h2>
-        <button id="rlClose" type="button">Close</button>
-      </div>
-
-      <div class="rl-controls">
-        <label>
-          Type
-          <select id="rlType">
-            <option value="all">All</option>
-            <option value="men">Men</option>
-            <option value="women">Women</option>
-            <option value="other">Other (single, family, mother's room…)</option>
-          </select>
-        </label>
-
-        <label>
-          Floor
-          <select id="rlFloor">
-            <option value="all">All floors</option>
-          </select>
-        </label>
-
-        <label>
-          Sort by
-          <select id="rlSort">
-            <option value="floor">Floor, then room</option>
-            <option value="type">Type, then floor</option>
-            <option value="room">Room</option>
-            <option value="sheet">Sheet order</option>
-          </select>
-        </label>
-
-        <label class="rl-check">
-          <input id="rlGroup" type="checkbox" checked>
-          Group by floor
-        </label>
-      </div>
-
-      <p id="rlStatus">Loading…</p>
-
-      <div class="rl-table-wrap">
-        <table class="rl-table">
-          <thead>
-            <tr>
-              <th>Floor</th>
-              <th>Floor Category</th>
-              <th>Room</th>
-              <th>Restroom Type</th>
-              <th>Done</th>
-              <th>Notes</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="rlBody"></tbody>
-        </table>
-      </div>
-    </div>
+    </section>
   </div>
 
   <script src="./app.js"></script>
-  <script src="./restroom-list.js"></script>
+  <script src="./dashboard.js"></script>
 </body>
 </html>
