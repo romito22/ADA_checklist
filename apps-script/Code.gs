@@ -46,7 +46,8 @@ function doGet(e) {
 
 function submitInspection_(data) {
   if (!data.length) return json_({ status: "error", message: "Empty submission" });
-  if (!String(data[0].inspector || '').trim()) {
+  // Required for the current form; a page cached from before this field existed doesn't send it at all.
+  if ('inspector' in data[0] && !String(data[0].inspector || '').trim()) {
     return json_({ status: "error", message: "Inspector name is required. Reload the page and try again." });
   }
 
