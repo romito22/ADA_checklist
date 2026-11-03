@@ -363,8 +363,15 @@
     const revised = hist.filter((h) => h.status === "Revised").length;
 
     const badge = byId("dupBadge");
+    const changed = badge.textContent !== String(auto);
     badge.textContent = String(auto);
     badge.hidden = auto === 0;
+    if (changed && auto > 0) {
+      badge.classList.remove("pop");
+      void badge.offsetWidth; // restart the pop animation
+      badge.classList.add("pop");
+    }
+    movePill(); // the badge changes the tab's width
 
     if (!hist.length) {
       byId("historySummary").textContent = DB.live
@@ -1303,6 +1310,25 @@
   }
 
   // ---------- Tabs ----------
+  // Slide the pill under the active tab (position and width come from the tab itself).
+  function movePill() {
+    const pill = document.querySelector(".tab-pill");
+    const active = document.querySelector(".tab.active");
+    if (!pill || !active) return;
+    pill.style.left = `${active.offsetLeft}px`;
+    pill.style.width = `${active.offsetWidth}px`;
+    // on a narrow screen the bar scrolls: keep the active tab in view
+    const nav = pill.parentElement;
+    if (nav.scrollWidth > nav.clientWidth) {
+      nav.scrollTo({ left: active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2, behavior: "smooth" });
+    }
+    // animate only after the first placement, so it doesn't fly in from the left on load
+    requestAnimationFrame(() => pill.classList.add("ready"));
+  }
+
+  window.addEventListener("resize", movePill);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(movePill);
+
   function showTab(name) {
     if (!TABS.includes(name)) name = "dashboard";
     document.querySelectorAll(".tab").forEach((t) => {
@@ -1311,6 +1337,7 @@
       t.setAttribute("aria-selected", on ? "true" : "false");
     });
     TABS.forEach((t) => byId(`panel-${t}`).classList.toggle("active", t === name));
+    movePill();
     try {
       history.replaceState(null, "", `#${name}`);
     } catch (e) {
