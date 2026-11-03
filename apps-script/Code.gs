@@ -8,7 +8,7 @@ const INSPECTIONS_SHEET = "inspections";
 const RESTROOM_FIELDS = { floor: 1, type: 2, room: 3, done: 4, notes: 5 }; // columns A..E
 const ANSWER_HEADERS = [
   "Timestamp", "InspectionID", "Floor", "Room", "Restroom Type", "Code", "Section",
-  "Question", "Answer", "Recommendation", "Notes", "InspectionDate"
+  "Question", "Answer", "Recommendation", "Notes", "InspectionDate", "Inspector", "BasedOn"
 ];
 // Submissions for the same room closer together than this belong to one "session".
 const SESSION_GAP_MS = 5 * 60 * 1000;
@@ -33,6 +33,7 @@ function doGet(e) {
   var action = e && e.parameter && e.parameter.action;
   if (action === 'restroomList') return restroomList_();
   if (action === 'restroomData') return restroomData_();
+  if (action === 'inspection') return inspectionDetail_(e.parameter.id);
   if (action === 'rebuildInspections') {
     writeInspectionsTab_(analyze_());
     return json_({ ok: true });
@@ -45,6 +46,9 @@ function doGet(e) {
 
 function submitInspection_(data) {
   if (!data.length) return json_({ status: "error", message: "Empty submission" });
+  if (!String(data[0].inspector || '').trim()) {
+    return json_({ status: "error", message: "Inspector name is required. Reload the page and try again." });
+  }
 
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -137,6 +141,8 @@ function readAnswers_() {
       o = map[id] = {
         id: id, room: normRoom_(row[idx['Room']]), ms: ms || 0,
         submitted: ms ? new Date(ms).toISOString() : '', date: date,
+        inspector: idx['Inspector'] != null ? String(row[idx['Inspector']] || '').trim() : '',
+        basedOn: idx['BasedOn'] != null ? String(row[idx['BasedOn']] || '').trim() : '',
         rows: 0, answered: 0, yes: 0, no: 0, na: 0, unsure: 0, _fp: []
       };
       list.push(o);
@@ -242,28 +248,32 @@ function analyze_() {
     }
   });
 
+  data.list.forEach(function (o) {
+    if (o.status === 'Current' && !o.note && o.basedOn) o.note = 'Completed from inspection ' + o.basedOn.slice(0, 8);
+  });
+
   return data;
 }
 
 function writeInspectionsTab_(res) {
   var ss = SpreadsheetApp.getActive();
   var sheet = ss.getSheetByName(INSPECTIONS_SHEET) || ss.insertSheet(INSPECTIONS_SHEET);
-  var header = ['InspectionID', 'Room', 'InspectionDate', 'Submitted', 'Answered', 'Yes', 'No', 'N/A',
-    'Not sure', 'Questions', 'Status', 'Override', 'Note'];
+  var header = ['InspectionID', 'Room', 'InspectionDate', 'Inspector', 'Submitted', 'Answered', 'Yes', 'No', 'N/A',
+    'Not sure', 'Questions', 'Status', 'Override', 'Note', 'BasedOn'];
 
   var list = res.list.slice().sort(function (a, b) {
     return a.room < b.room ? -1 : a.room > b.room ? 1 : a.ms - b.ms;
   });
   var rows = list.map(function (o) {
-    return [o.id, o.room, o.date, o.submitted, o.answered, o.yes, o.no, o.na, o.unsure, o.rows,
-      o.status, o.override, o.note];
+    return [o.id, o.room, o.date, o.inspector, o.submitted, o.answered, o.yes, o.no, o.na, o.unsure, o.rows,
+      o.status, o.override, o.note, o.basedOn];
   });
 
   sheet.clear();
   sheet.getRange(1, 1, 1, header.length).setValues([header]).setFontWeight('bold');
   sheet.setFrozenRows(1);
   if (rows.length) {
-    sheet.getRange(2, 2, rows.length, 3).setNumberFormat('@');
+    sheet.getRange(2, 2, rows.length, 4).setNumberFormat('@');
     sheet.getRange(2, 1, rows.length, header.length).setValues(rows);
   }
 }
@@ -277,13 +287,13 @@ function progressByRoom_() {
   res.list.forEach(function (o) {
     var r = rooms[o.room] || (rooms[o.room] = {
       room: o.room, inspections: 0, hasCurrent: false, answered: 0, yes: 0, no: 0, na: 0, unsure: 0,
-      last: '', date: '', currentId: ''
+      last: '', date: '', currentId: '', inspector: ''
     });
     r.inspections++;
     if (o.status === 'Current') {
       r.hasCurrent = true;
       r.answered = o.answered; r.yes = o.yes; r.no = o.no; r.na = o.na; r.unsure = o.unsure;
-      r.last = o.submitted; r.date = o.date; r.currentId = o.id;
+      r.last = o.submitted; r.date = o.date; r.currentId = o.id; r.inspector = o.inspector;
     }
   });
 
@@ -293,7 +303,8 @@ function progressByRoom_() {
     .map(function (o) {
       return {
         id: o.id, room: o.room, date: o.date, submitted: o.submitted, answered: o.answered,
-        yes: o.yes, no: o.no, na: o.na, unsure: o.unsure, status: o.status, note: o.note, override: o.override
+        yes: o.yes, no: o.no, na: o.na, unsure: o.unsure, status: o.status, note: o.note, override: o.override,
+        inspector: o.inspector, basedOn: o.basedOn
       };
     });
 
@@ -305,8 +316,20 @@ function progressByRoom_() {
 }
 
 function setInspectionOverride_(data) {
-  var value = String(data.override || '').toLowerCase();
-  if (['current', 'ignore', ''].indexOf(value) < 0) return json_({ ok: false, error: 'Bad override' });
+  return applyOverrides_([{ inspectionId: data.inspectionId, override: data.override }]);
+}
+
+function setInspectionOverrides_(data) {
+  return applyOverrides_(data.changes || []);
+}
+
+// changes: [{ inspectionId, override: 'current' | 'ignore' | '' }], saved together, one rebuild.
+function applyOverrides_(changes) {
+  if (!changes.length) return json_({ ok: false, error: 'Nothing to change' });
+  for (var c = 0; c < changes.length; c++) {
+    var v = String(changes[c].override || '').toLowerCase();
+    if (['current', 'ignore', ''].indexOf(v) < 0) return json_({ ok: false, error: 'Bad override' });
+  }
 
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -316,17 +339,58 @@ function setInspectionOverride_(data) {
     var h = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     var iId = h.indexOf('InspectionID'), iOv = h.indexOf('Override');
     var ids = sheet.getRange(2, iId + 1, Math.max(sheet.getLastRow() - 1, 1), 1).getValues();
-    for (var i = 0; i < ids.length; i++) {
-      if (String(ids[i][0]).trim() === String(data.inspectionId)) {
-        sheet.getRange(i + 2, iOv + 1).setValue(value);
-        writeInspectionsTab_(analyze_());
-        return json_({ ok: true });
-      }
+    var rowOf = {};
+    for (var i = 0; i < ids.length; i++) rowOf[String(ids[i][0]).trim()] = i + 2;
+
+    for (var k = 0; k < changes.length; k++) {
+      var r = rowOf[String(changes[k].inspectionId).trim()];
+      if (!r) return json_({ ok: false, error: 'Inspection not found' });
+      sheet.getRange(r, iOv + 1).setValue(String(changes[k].override || '').toLowerCase());
     }
-    return json_({ ok: false, error: 'Inspection not found' });
+    SpreadsheetApp.flush();
+    writeInspectionsTab_(analyze_());
+    return json_({ ok: true, changed: changes.length });
   } finally {
     lock.releaseLock();
   }
+}
+
+// Every answer of one inspection (used to see what was left blank and to complete it).
+function inspectionDetail_(id) {
+  id = String(id || '').trim();
+  var ss = SpreadsheetApp.getActive();
+  var v = ss.getSheetByName(SHEET_NAME).getDataRange().getValues();
+  if (v.length < 2) return json_({ ok: false, error: 'No data' });
+
+  var h = v[0], idx = {};
+  for (var i = 0; i < h.length; i++) idx[String(h[i]).trim()] = i;
+  var tz = ss.getSpreadsheetTimeZone();
+  var meta = null, answers = [];
+
+  for (var r = 1; r < v.length; r++) {
+    var row = v[r];
+    if (String(row[idx['InspectionID']] || '').trim() !== id) continue;
+    if (!meta) {
+      var d = idx['InspectionDate'] != null ? row[idx['InspectionDate']] : '';
+      var ts = row[idx['Timestamp']];
+      var ms = ts instanceof Date ? ts.getTime() : Date.parse(String(ts));
+      meta = {
+        id: id, floor: String(row[idx['Floor']]), room: String(row[idx['Room']]),
+        type: String(row[idx['Restroom Type']]),
+        date: d instanceof Date ? Utilities.formatDate(d, tz, 'yyyy-MM-dd') : String(d || '').trim() || (ms ? new Date(ms).toISOString().slice(0, 10) : ''),
+        inspector: idx['Inspector'] != null ? String(row[idx['Inspector']] || '').trim() : '',
+        submitted: ms ? new Date(ms).toISOString() : ''
+      };
+    }
+    answers.push({
+      code: String(row[idx['Code']]),
+      answer: String(row[idx['Answer']]).trim().toLowerCase(),
+      notes: String(row[idx['Notes']] || '')
+    });
+  }
+
+  if (!meta) return json_({ ok: false, error: 'Inspection not found' });
+  return json_({ ok: true, inspection: meta, answers: answers });
 }
 
 
@@ -360,6 +424,7 @@ function restroomPost_(data) {
   try {
     if (data.action === 'addRestroom') return addRestroom_(data);
     if (data.action === 'setInspectionOverride') return setInspectionOverride_(data);
+    if (data.action === 'setInspectionOverrides') return setInspectionOverrides_(data);
     if (data.action !== 'updateRestroom') return json_({ ok: false, error: 'Unknown action' });
 
     var col = RESTROOM_FIELDS[data.field];
