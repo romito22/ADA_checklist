@@ -204,7 +204,7 @@
     const no = infos.reduce((a, p) => a + p.no, 0);
     const compliance = yes + no ? Math.round((yes / (yes + no)) * 100) : 0;
     const received = Object.values(DB.progress).reduce((a, p) => a + p.inspections, 0);
-    const flagged = DB.history.filter((h) => ["Superseded", "Duplicate", "Ignored"].includes(h.status)).length;
+    const flagged = DB.history.filter((h) => ["Superseded", "Duplicate"].includes(h.status)).length;
 
     const kpis = byId("kpis");
     kpis.innerHTML = "";
@@ -234,7 +234,7 @@
       ["Needs review", count("Needs review"), "See these restrooms", goStatus("Needs review")],
       ["Not started", count("Not started"), "See these restrooms", goStatus("Not started")],
       ["Inspections received", received, "Review inspections", goDuplicates],
-      ["Duplicates flagged", flagged, "Review duplicates", goDuplicates],
+      ["Duplicates to review", flagged, flagged ? "Review duplicates" : "Nothing to review", goDuplicates],
       ["Yes rate (yes ÷ yes+no)", `${compliance}%`, null, null]
     ].forEach(([label, value, hint, action]) => {
       const k = el("div", "kpi");
@@ -371,14 +371,23 @@
       return;
     }
 
+    // a room needs review while it still has an automatic flag (Replaced / Duplicate) nobody has decided on
+    const needsReview = new Set(
+      hist.filter((h) => h.status === "Superseded" || h.status === "Duplicate").map((h) => h.room)
+    );
+
     byId("historySummary").textContent =
       `${auto + prev + ignored + revised} extra inspections in ${new Set(hist.map((h) => h.room)).size} restrooms: ` +
       `${auto} flagged automatically as duplicates or replaced submissions, ${prev} older inspections kept as history` +
       (revised ? `, ${revised} replaced by an edited or merged version` : "") +
       (ignored ? `, ${ignored} ignored by you` : "") +
-      ". Nothing is deleted; the one labeled Counts is what the Dashboard uses.";
+      `. ${needsReview.size ? `${needsReview.size} restroom${needsReview.size === 1 ? "" : "s"} still need a decision.` : "All resolved."} ` +
+      "Nothing is deleted; the one labeled Counts is what the Dashboard uses.";
 
     const rooms = [...new Set(hist.map((h) => h.room))];
+    const needBoxes = [];
+    const doneBoxes = [];
+
     rooms.forEach((room) => {
       const items = hist.filter((h) => h.room === room);
       const counts = items.find((h) => h.status === "Current");
@@ -498,8 +507,27 @@
         box.appendChild(line);
       });
 
-      list.appendChild(box);
+      (needsReview.has(room) ? needBoxes : doneBoxes).push(box);
     });
+
+    if (needBoxes.length) {
+      list.appendChild(el("h3", "section-title", `Needs review (${needBoxes.length})`));
+      needBoxes.forEach((b) => list.appendChild(b));
+    } else {
+      list.appendChild(el("p", "rv-ok", "Nothing to review. Every duplicate has been handled ✓"));
+    }
+
+    if (doneBoxes.length) {
+      const resolved = el("details", "resolved");
+      resolved.open = openRooms.has("__resolved__");
+      resolved.addEventListener("toggle", () => {
+        if (resolved.open) openRooms.add("__resolved__");
+        else openRooms.delete("__resolved__");
+      });
+      resolved.appendChild(el("summary", "", `Resolved, kept as history (${doneBoxes.length})`));
+      doneBoxes.forEach((b) => resolved.appendChild(b));
+      list.appendChild(resolved);
+    }
   }
 
   // ---------- Inspection details (what was answered, what was left blank) ----------
