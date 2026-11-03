@@ -35,6 +35,12 @@ const restroomType = document.getElementById("restroomType");
 const inspectionDate = document.getElementById("inspectionDate");
 const surveyProgress = document.getElementById("surveyProgress");
 
+const inspectorName = document.getElementById("inspectorName");
+const inspectorList = document.getElementById("inspectorList");
+
+const completeBanner = document.getElementById("completeBanner");
+const completeText = document.getElementById("completeText");
+
 const draftBanner = document.getElementById("draftBanner");
 const draftText = document.getElementById("draftText");
 
@@ -46,7 +52,10 @@ const reviewTitle = document.getElementById("reviewTitle");
 // State
 const state = {};        // answers + notes
 const sectionState = {}; // open/closed
-const metaState = { floor: "", room: "", type: "", date: "" };
+const metaState = { floor: "", room: "", type: "", date: "", inspector: "" };
+// Set while the user is filling in the blanks of an earlier inspection (see SURVEY.loadFrom).
+let completing = null;
+const INSPECTOR_KEY = "ada_inspector_names_v1";
 // One id per inspection, created when the form starts (not per click), so a
 // retry or double tap can never create a second inspection.
 const session = { id: newId(), timestamp: null };
@@ -128,13 +137,55 @@ function updateMeta() {
   metaState.room = roomInput.value || "";
   metaState.type = restroomType.value || "";
   metaState.date = inspectionDate.value || "";
+  metaState.inspector = (inspectorName.value || "").trim();
   updatePreview();
   updateProgress();
   saveDraft();
 }
 
 function validateMeta() {
-  return metaState.floor && metaState.room.trim().length > 0 && metaState.type && metaState.date;
+  return (
+    metaState.floor &&
+    metaState.room.trim().length > 0 &&
+    metaState.type &&
+    metaState.date &&
+    metaState.inspector.length >= 2
+  );
+}
+
+// ---------- Inspector name (mandatory, remembered on this device) ----------
+function readInspectors() {
+  try {
+    const list = JSON.parse(localStorage.getItem(INSPECTOR_KEY) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function rememberInspector(name) {
+  const clean = String(name || "").trim();
+  if (clean.length < 2) return;
+  try {
+    const list = [clean, ...readInspectors().filter((n) => n.toLowerCase() !== clean.toLowerCase())].slice(0, 12);
+    localStorage.setItem(INSPECTOR_KEY, JSON.stringify(list));
+  } catch (e) {
+    /* storage unavailable: the name just won't be remembered */
+  }
+  fillInspectorList();
+}
+
+function fillInspectorList() {
+  inspectorList.innerHTML = "";
+  readInspectors().forEach((n) => {
+    const opt = document.createElement("option");
+    opt.value = n;
+    inspectorList.appendChild(opt);
+  });
+}
+
+function lastInspector() {
+  return readInspectors()[0] || "";
 }
 
 // unanswered questions are allowed; the review screen warns about them
@@ -206,7 +257,13 @@ function showRoomInfo() {
   } else if (info.inspections) {
     roomInfo.classList.add("warn");
     roomInfo.textContent =
-      `Already inspected (${info.date}). Submitting again is recorded as a re-inspection; the newest one counts.`;
+      `Already inspected (${info.date}). Submitting again is recorded as a re-inspection; the newest one counts. `;
+    if (info.missing > 0 && info.currentId && !completing) {
+      const b = el("button", "link-btn", `Fill in its ${info.missing} unanswered question${info.missing === 1 ? "" : "s"} instead`);
+      b.type = "button";
+      b.addEventListener("click", () => window.ADA.completeInspection(info.currentId));
+      roomInfo.appendChild(b);
+    }
   } else {
     roomInfo.textContent = "Not inspected yet.";
   }
@@ -260,6 +317,7 @@ function saveDraft() {
           timestamp: session.timestamp,
           meta: metaState,
           state,
+          completing,
           savedAt: Date.now()
         })
       );
@@ -308,7 +366,9 @@ function checkDraft() {
     session.timestamp = d.timestamp || null;
     Object.keys(state).forEach((k) => delete state[k]);
     Object.assign(state, d.state || {});
+    completing = d.completing || null;
     applyMeta(d.meta || {});
+    showCompleteBanner();
     draftBanner.hidden = true;
     render();
   };
@@ -343,9 +403,85 @@ function applyMeta(meta) {
   floorSelect.value = meta.floor || "";
   restroomType.value = meta.type || "";
   inspectionDate.value = meta.date || today();
+  inspectorName.value = meta.inspector || lastInspector();
   updateMeta();
   showRoomInfo();
 }
+
+function showCompleteBanner() {
+  if (completing) {
+    completeText.textContent =
+      `Completing the inspection of room ${completing.room} (${completing.date}` +
+      `${completing.inspector ? `, by ${completing.inspector}` : ""}). ` +
+      "The highlighted questions are still unanswered or marked Not sure. " +
+      "Submitting saves a new, complete inspection and keeps the old one as history.";
+    completeBanner.hidden = false;
+  } else {
+    completeBanner.hidden = true;
+  }
+}
+
+document.getElementById("completeCancel").addEventListener("click", () => {
+  if (hasContent() && !confirm("Stop completing this inspection and clear the form?")) return;
+  resetAll();
+});
+
+// Pair each current survey question with its record in a saved inspection. Same form version
+// (same number of rows) pairs by position, which is exact; otherwise by question text, then by code.
+// (Codes alone are unreliable: Sheets stored "3.10" as the number 3.1 in older rows.)
+function matchAnswers(questions, answers) {
+  const norm = (t) => String(t || "").replace(/\s+/g, " ").trim().toLowerCase();
+  if (answers.length === questions.length) return questions.map((q, i) => answers[i]);
+
+  const byQ = {};
+  const byCode = {};
+  answers.forEach((a) => {
+    byQ[norm(a.question)] = a;
+    (byCode[a.code] = byCode[a.code] || []).push(a);
+  });
+  return questions.map(
+    (q) => byQ[norm(q.question)] || (byCode[q.code] && byCode[q.code].length === 1 ? byCode[q.code][0] : undefined)
+  );
+}
+
+// Load an existing inspection into the form so its blanks can be filled in. It is submitted as a
+// NEW inspection (own id) that points back to the original with BasedOn; nothing is overwritten.
+window.SURVEY = {
+  loadFrom(rec) {
+    if (!FORM_CONFIG) return;
+    resetAll();
+
+    const matched = matchAnswers(FORM_CONFIG.questions, rec.answers);
+    FORM_CONFIG.questions.forEach((q, i) => {
+      const a = matched[i];
+      if (!a) return;
+      if (["yes", "no", "na", "unsure"].includes(a.answer)) state[q.id] = a.answer;
+      if (a.notes) state[`${q.id}_notes`] = a.notes;
+    });
+
+    const m = rec.inspection;
+    completing = { fromId: m.id, room: m.room, date: m.date, inspector: m.inspector };
+
+    // open every section that still has something to answer
+    FORM_CONFIG.questions.forEach((q) => {
+      if (!state[q.id] || state[q.id] === "unsure") {
+        const id = sectionIdForCode(q.code);
+        if (id) sectionState[id] = true;
+      }
+    });
+
+    applyMeta({ room: m.room, floor: m.floor, type: m.type, date: today(), inspector: lastInspector() });
+    showCompleteBanner();
+    render();
+    saveDraft();
+
+    const first = FORM_CONFIG.questions.find((q) => !state[q.id] || state[q.id] === "unsure");
+    if (first) {
+      const target = document.getElementById(`q-${first.id}`);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+};
 
 // ---------- Render ----------
 function render() {
@@ -433,6 +569,7 @@ function render() {
 function renderQuestion(q) {
   const block = document.createElement("div");
   block.id = `q-${q.id}`;
+  if (completing && (!state[q.id] || state[q.id] === "unsure")) block.classList.add("needs-answer");
   block.style.marginBottom = "18px";
   block.style.paddingBottom = "14px";
   block.style.borderBottom = "1px solid #eee";
@@ -638,7 +775,9 @@ function buildPayload() {
         ? (q.solutionsIfNo || []).join("; ")
         : "",
     notes: state[`${q.id}_notes`] || "",
-    inspectionDate: metaState.date
+    inspectionDate: metaState.date,
+    inspector: metaState.inspector,
+    basedOn: completing ? completing.fromId : ""
   }));
 }
 
@@ -702,7 +841,7 @@ function listSection(title, items, withGo) {
 
 function openReview() {
   if (!validateMeta()) {
-    alert("Please choose the restroom, floor, type and inspection date first.");
+    alert("Please choose the restroom, floor, type and inspection date, and enter the inspector name first.");
     return;
   }
   if (!validateAnswers()) return;
@@ -728,7 +867,11 @@ function openReview() {
   reviewActions.innerHTML = "";
 
   reviewBody.appendChild(
-    el("div", "rv-meta", `Room ${metaState.room} · Floor ${metaState.floor} · ${metaState.type} · ${metaState.date}`)
+    el(
+      "div",
+      "rv-meta",
+      `Room ${metaState.room} · Floor ${metaState.floor} · ${metaState.type} · ${metaState.date} · by ${metaState.inspector}`
+    )
   );
 
   const chips = el("div", "rv-chips");
@@ -801,6 +944,7 @@ async function sendInspection() {
       throw new Error(data.message || "The server did not accept the inspection.");
     }
 
+    rememberInspector(metaState.inspector);
     clearDraft();
     setBusy(false);
     showSuccess(data);
@@ -887,12 +1031,16 @@ function resetAll() {
   delete reviewModal.dataset.done;
   clearDraft();
 
+  completing = null;
+  showCompleteBanner();
+
   roomPick.value = "";
   roomInput.value = "";
   roomInput.hidden = true;
   floorSelect.value = "";
   restroomType.value = "";
   inspectionDate.value = today();
+  inspectorName.value = lastInspector();
   updateMeta();
   showRoomInfo();
   populateRooms();
@@ -920,7 +1068,11 @@ async function loadConfig() {
   });
   restroomType.addEventListener("change", updateMeta);
   inspectionDate.addEventListener("change", updateMeta);
+  inspectorName.addEventListener("input", updateMeta);
+  inspectorName.addEventListener("change", () => rememberInspector(inspectorName.value));
 
+  fillInspectorList();
+  inspectorName.value = lastInspector();
   inspectionDate.value = today();
   updateMeta();
   render();

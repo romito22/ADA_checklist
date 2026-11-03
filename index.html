@@ -407,7 +407,7 @@
 
     .hist-row {
       display: grid;
-      grid-template-columns: 120px 1fr 100px auto;
+      grid-template-columns: 130px 1fr 130px auto;
       gap: 12px;
       align-items: center;
       padding: 8px 0;
@@ -419,6 +419,10 @@
       display: block;
       color: #5b657a;
       font-size: 12px;
+    }
+
+    .hist-row .tag {
+      justify-self: start;
     }
 
     .hist-actions {
@@ -933,6 +937,102 @@
       margin: 6px 0;
     }
 
+    /* ---------- Duplicates / details / inspector ---------- */
+    .kpi.link {
+      cursor: pointer;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    .kpi.link:hover,
+    .kpi.link:focus-visible {
+      border-color: #1e5eff;
+      box-shadow: 0 0 0 3px rgba(30, 94, 255, 0.14);
+      outline: none;
+    }
+
+    .kpi.link .go {
+      font-size: 12px;
+      font-weight: 800;
+      color: #1e5eff;
+      margin-top: 2px;
+    }
+
+    .badge {
+      display: inline-block;
+      min-width: 18px;
+      padding: 1px 6px;
+      margin-left: 6px;
+      border-radius: 999px;
+      background: #e0a100;
+      color: #111;
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .badge[hidden] { display: none; }
+
+    .req { color: #d93025; }
+
+    .draft-banner.complete {
+      background: #eaf1ff;
+      border-color: #b9cdf7;
+      color: #0f3fb8;
+    }
+
+    .needs-answer {
+      background: #fffaf0;
+      border-left: 4px solid #e0a100 !important;
+      padding-left: 10px;
+    }
+
+    .row-link {
+      background: none;
+      color: #1e5eff;
+      padding: 0;
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: underline;
+      text-align: left;
+    }
+
+    .hist-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0 10px;
+    }
+
+    .hist-head .hist-note {
+      font-size: 13px;
+      color: #5b657a;
+    }
+
+    .detail-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px 16px;
+      background: #f8f9fc;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .detail-meta small {
+      display: block;
+      color: #5b657a;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .detail-meta strong { display: block; }
+
     @media (max-width: 900px) {
       .room-head { display: none; }
 
@@ -1002,6 +1102,7 @@
       <button class="tab" role="tab" data-tab="dashboard" type="button">Dashboard</button>
       <button class="tab" role="tab" data-tab="survey" type="button">Survey</button>
       <button class="tab" role="tab" data-tab="database" type="button">Restrooms</button>
+      <button class="tab" role="tab" data-tab="duplicates" type="button">Duplicates <span id="dupBadge" class="badge" hidden></span></button>
     </nav>
 
     <section id="panel-dashboard" class="panel" role="tabpanel">
@@ -1033,10 +1134,6 @@
         <span>Status</span>
       </div>
       <div id="roomBars"></div>
-
-      <h3 class="section-title">Inspection history &amp; duplicates</h3>
-      <p id="historySummary" class="status-note"></p>
-      <div id="historyList"></div>
     </section>
 
     <section id="panel-database" class="panel" role="tabpanel">
@@ -1108,7 +1205,40 @@
       <div id="dbBoard" class="board" hidden></div>
     </section>
 
+    <section id="panel-duplicates" class="panel" role="tabpanel">
+      <p id="historySummary" class="status-note"></p>
+
+      <details class="howto" open>
+        <summary>What do these labels mean? Where is everything saved?</summary>
+        <ul>
+          <li><span class="tag complete">Counts</span> (Current): the inspection the Dashboard uses for this
+            restroom. It is the most recent one that is complete.</li>
+          <li><span class="tag none">Older inspection</span> (Previous): an earlier visit, kept as history. It is not counted.</li>
+          <li><span class="tag progress">Replaced</span> (Superseded): sent only minutes after another one for the same
+            restroom, so it is treated as the same visit. The more complete or later one replaces it.</li>
+          <li><span class="tag progress">Duplicate</span>: exactly the same answers as another one sent just before.</li>
+          <li><span class="tag none">Ignored</span>: you chose to ignore it.</li>
+        </ul>
+        <p><strong>Nothing is ever deleted.</strong> Every answer is stored in the Google Sheet, tab <code>answers</code>.
+          The tab <code>inspections</code> has one row per inspection with its label.
+          <a href="https://docs.google.com/spreadsheets/d/1GLxfyx65D8W94cdcY2W9scA3eZ_7jMYfd3PzWFIRbnM/edit"
+             target="_blank" rel="noopener noreferrer">Open the sheet</a></p>
+        <p><strong>What can you do?</strong> Open a restroom to see its inspections. <em>View details</em> shows
+          who did it and which questions were left blank. <em>Keep newest only</em> keeps the latest and ignores the rest.
+          <em>Keep this one</em> and <em>Ignore</em> work one inspection at a time.</p>
+      </details>
+
+      <div id="historyList"></div>
+    </section>
+
     <section id="panel-survey" class="panel" role="tabpanel">
+      <div id="completeBanner" class="draft-banner complete" hidden>
+        <span id="completeText"></span>
+        <span class="draft-actions">
+          <button id="completeCancel" class="btn-sm secondary" type="button">Cancel</button>
+        </span>
+      </div>
+
       <div id="draftBanner" class="draft-banner" hidden>
         <span id="draftText"></span>
         <span class="draft-actions">
@@ -1155,6 +1285,13 @@
           <label for="inspectionDate">Inspection date</label>
           <input id="inspectionDate" type="date">
         </div>
+
+        <div class="meta-field">
+          <label for="inspectorName">Inspector name <span class="req">*</span></label>
+          <input id="inspectorName" type="text" list="inspectorList" placeholder="Who is doing this survey?"
+                 autocomplete="name" maxlength="60">
+          <datalist id="inspectorList"></datalist>
+        </div>
       </div>
 
       <p class="form-hint">
@@ -1179,6 +1316,14 @@
       <h2 id="reviewTitle">Review before submitting</h2>
       <div id="reviewBody"></div>
       <div id="reviewActions" class="modal-actions"></div>
+    </div>
+  </div>
+
+  <div id="detailModal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <h2 id="detailTitle">Inspection details</h2>
+      <div id="detailBody"></div>
+      <div id="detailActions" class="modal-actions"></div>
     </div>
   </div>
 
