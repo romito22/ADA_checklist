@@ -410,7 +410,7 @@
       const cmp = el("button", "btn-sm secondary", "Compare & merge");
       cmp.type = "button";
       cmp.title = "See where these inspections differ, choose the right answers and save one merged version.";
-      cmp.disabled = items.filter((h) => h.status !== "Ignored").length < 2;
+      cmp.disabled = items.length < 2;
       cmp.addEventListener("click", () => openMerge(room, items));
       const headBtns = el("span", "hist-actions");
       headBtns.appendChild(cmp);
@@ -694,10 +694,10 @@
     byId("mergeModal").hidden = false;
     document.body.style.overflow = "hidden";
 
-    const usable = items
-      .filter((h) => h.status !== "Ignored")
-      .slice()
-      .sort((a, b) => String(a.submitted).localeCompare(String(b.submitted)));
+    // every inspection of the room can be compared, including ones you ignored earlier
+    const usable = items.slice().sort((a, b) => String(a.submitted).localeCompare(String(b.submitted)));
+    const active = usable.filter((h) => h.status !== "Ignored");
+    const pool = active.length >= 2 ? active : usable;
 
     body.appendChild(
       el(
@@ -705,19 +705,19 @@
         "status-note",
         "Pick two or three inspections of this restroom. You will see only the questions where they differ and choose " +
           "which answer to keep. The result is saved as one new version that replaces them in the dashboard; " +
-          "the originals stay in the sheet as history."
+          "the originals stay in the sheet as history. Ignored inspections can be compared too."
       )
     );
 
     const boxes = [];
     // default: the newest, against the latest one from a different visit (not resent minutes before it)
-    const last = usable[usable.length - 1];
+    const last = pool[pool.length - 1];
     const other =
-      usable
+      pool
         .slice(0, -1)
         .reverse()
         .find((h) => Math.abs(new Date(last.submitted) - new Date(h.submitted)) > 5 * 60 * 1000) ||
-      usable[usable.length - 2];
+      pool[pool.length - 2];
     const newest = [last, other].filter(Boolean).map((h) => h.id);
     usable.forEach((h) => {
       const label = el("label", "mg-pick");
