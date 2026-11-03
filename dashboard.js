@@ -19,6 +19,7 @@
     Previous: "none",
     Superseded: "progress",
     Duplicate: "progress",
+    Revised: "none",
     Ignored: "none"
   };
   // Plain-language names for the technical statuses stored in the sheet.
@@ -27,6 +28,7 @@
     Previous: "Older inspection",
     Superseded: "Replaced",
     Duplicate: "Duplicate",
+    Revised: "Replaced by newer version",
     Ignored: "Ignored"
   };
   const HISTORY_HINT = {
@@ -34,6 +36,7 @@
     Previous: "Previous: an earlier visit kept as history.",
     Superseded: "Superseded: sent minutes after another one for the same restroom, replaced by it.",
     Duplicate: "Duplicate: exactly the same answers as another one sent just before.",
+    Revised: "Revised: an edited or merged version replaced it. It stays in the sheet as history.",
     Ignored: "Ignored: you chose to ignore it."
   };
 
@@ -341,6 +344,7 @@
     const auto = hist.filter((h) => h.status === "Superseded" || h.status === "Duplicate").length;
     const prev = hist.filter((h) => h.status === "Previous").length;
     const ignored = hist.filter((h) => h.status === "Ignored").length;
+    const revised = hist.filter((h) => h.status === "Revised").length;
 
     const badge = byId("dupBadge");
     badge.textContent = String(auto);
@@ -354,8 +358,9 @@
     }
 
     byId("historySummary").textContent =
-      `${auto + prev + ignored} extra inspections in ${new Set(hist.map((h) => h.room)).size} restrooms: ` +
+      `${auto + prev + ignored + revised} extra inspections in ${new Set(hist.map((h) => h.room)).size} restrooms: ` +
       `${auto} flagged automatically as duplicates or replaced submissions, ${prev} older inspections kept as history` +
+      (revised ? `, ${revised} replaced by an edited or merged version` : "") +
       (ignored ? `, ${ignored} ignored by you` : "") +
       ". Nothing is deleted; the one labeled Counts is what the Dashboard uses.";
 
@@ -383,7 +388,15 @@
       const keep = el("button", "btn-sm", "Keep newest only");
       keep.type = "button";
       keep.title = "Marks the newest as the one that counts and ignores the others. Nothing is deleted.";
-      head.appendChild(keep);
+      const cmp = el("button", "btn-sm secondary", "Compare & merge");
+      cmp.type = "button";
+      cmp.title = "See where these inspections differ, choose the right answers and save one merged version.";
+      cmp.disabled = items.filter((h) => h.status !== "Ignored").length < 2;
+      cmp.addEventListener("click", () => openMerge(room, items));
+      const headBtns = el("span", "hist-actions");
+      headBtns.appendChild(cmp);
+      headBtns.appendChild(keep);
+      head.appendChild(headBtns);
       box.appendChild(head);
 
       const buttons = [keep];
@@ -433,6 +446,12 @@
         details.type = "button";
         details.addEventListener("click", () => openDetail(h.id));
         actions.appendChild(details);
+
+        const edit = el("button", "btn-sm secondary", "Edit");
+        edit.type = "button";
+        edit.title = "Open this inspection in the survey, change answers and save a new version.";
+        edit.addEventListener("click", () => editInspection(h.id));
+        actions.appendChild(edit);
 
         if (h.status !== "Current") {
           const b = el("button", "btn-sm secondary", "Keep this one");
@@ -585,39 +604,357 @@
     }
 
     actions.appendChild(closeBtn);
-    if (blank.length || unsure.length) {
-      const fix = el("button", "primary", "Complete the missing answers");
-      fix.type = "button";
-      fix.addEventListener("click", () => {
-        closeDetail();
-        completeFrom(data);
-      });
-      actions.appendChild(fix);
-      body.appendChild(
-        el(
-          "div",
-          "rv-warn",
-          "Completing opens the survey with these answers filled in, so you only answer what is missing. " +
-            "It is saved as a new inspection and the old one stays as history."
-        )
-      );
-    }
+    const fix = el("button", "primary", "Edit this inspection");
+    fix.type = "button";
+    fix.addEventListener("click", () => {
+      closeDetail();
+      editFrom(data);
+    });
+    actions.appendChild(fix);
+    body.appendChild(
+      el(
+        "div",
+        "rv-warn",
+        "Editing opens the survey with these answers filled in" +
+          (blank.length || unsure.length ? ", and highlights the ones still missing" : "") +
+          ". Change anything and save: it becomes a new version that replaces this one in the dashboard, " +
+          "and this one stays as history."
+      )
+    );
   }
 
-  function completeFrom(data) {
+  function editFrom(data) {
     if (!window.SURVEY) return;
     window.SURVEY.loadFrom(data);
     showTab("survey");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function completeInspection(id) {
+  async function editInspection(id) {
     try {
-      completeFrom(await fetchInspection(id));
+      editFrom(await fetchInspection(id));
     } catch (err) {
       console.error(err);
       alert("Could not load that inspection. Check the connection and try again.");
     }
+  }
+
+  // ---------- Compare & merge ----------
+  const ANSWER_FACE = {
+    yes: ["YES", "y"],
+    no: ["NO", "n"],
+    na: ["N/A", "a"],
+    unsure: ["NOT SURE", "u"],
+    "": ["(blank)", "b"]
+  };
+
+  function closeMerge() {
+    byId("mergeModal").hidden = true;
+    if (byId("reviewModal").hidden && byId("detailModal").hidden) document.body.style.overflow = "";
+  }
+
+  byId("mergeModal").addEventListener("click", (e) => {
+    if (e.target === byId("mergeModal")) closeMerge();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !byId("mergeModal").hidden) closeMerge();
+  });
+
+  const describe = (h) =>
+    `${h.date || "?"} · ${h.inspector || "inspector not recorded"} · ${h.answered}/${DB.total} answered · ` +
+    `${HISTORY_LABEL[h.status] || h.status}`;
+
+  // Step 1: choose which inspections of the room to compare.
+  function openMerge(room, items) {
+    const body = byId("mergeBody");
+    const actions = byId("mergeActions");
+    byId("mergeTitle").textContent = `Compare & merge · room ${room}`;
+    body.innerHTML = "";
+    actions.innerHTML = "";
+    byId("mergeModal").hidden = false;
+    document.body.style.overflow = "hidden";
+
+    const usable = items
+      .filter((h) => h.status !== "Ignored")
+      .slice()
+      .sort((a, b) => String(a.submitted).localeCompare(String(b.submitted)));
+
+    body.appendChild(
+      el(
+        "p",
+        "status-note",
+        "Pick two or three inspections of this restroom. You will see only the questions where they differ and choose " +
+          "which answer to keep. The result is saved as one new version that replaces them in the dashboard; " +
+          "the originals stay in the sheet as history."
+      )
+    );
+
+    const boxes = [];
+    // default: the newest, against the latest one from a different visit (not resent minutes before it)
+    const last = usable[usable.length - 1];
+    const other =
+      usable
+        .slice(0, -1)
+        .reverse()
+        .find((h) => Math.abs(new Date(last.submitted) - new Date(h.submitted)) > 5 * 60 * 1000) ||
+      usable[usable.length - 2];
+    const newest = [last, other].filter(Boolean).map((h) => h.id);
+    usable.forEach((h) => {
+      const label = el("label", "mg-pick");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.value = h.id;
+      box.checked = newest.includes(h.id);
+      boxes.push(box);
+      label.appendChild(box);
+      label.appendChild(el("span", "", ` ${describe(h)}`));
+      body.appendChild(label);
+    });
+
+    const closeBtn = el("button", "secondary", "Close");
+    closeBtn.type = "button";
+    closeBtn.addEventListener("click", closeMerge);
+    const go = el("button", "primary", "Compare");
+    go.type = "button";
+    go.addEventListener("click", () => {
+      const ids = boxes.filter((b) => b.checked).map((b) => b.value);
+      if (ids.length < 2 || ids.length > 3) {
+        alert("Pick two or three inspections to compare.");
+        return;
+      }
+      showMerge(room, ids, items);
+    });
+    actions.appendChild(closeBtn);
+    actions.appendChild(go);
+  }
+
+  // Step 2: side-by-side differences, per-question choice, live preview, then save the merged version.
+  async function showMerge(room, ids, items) {
+    const body = byId("mergeBody");
+    const actions = byId("mergeActions");
+    body.innerHTML = "";
+    actions.innerHTML = "";
+    body.appendChild(el("p", "status-note", "Loading the inspections…"));
+
+    const back = el("button", "secondary", "Back");
+    back.type = "button";
+    back.addEventListener("click", () => openMerge(room, items));
+
+    let details;
+    try {
+      details = await Promise.all(ids.map(fetchInspection));
+    } catch (err) {
+      console.error(err);
+      body.innerHTML = "";
+      body.appendChild(el("div", "rv-error", "Could not load those inspections. Check the connection and try again."));
+      actions.appendChild(back);
+      return;
+    }
+    if (typeof FORM_CONFIG === "undefined" || !FORM_CONFIG) {
+      body.innerHTML = "";
+      body.appendChild(el("p", "status-note", "The survey questions are still loading. Try again in a moment."));
+      actions.appendChild(back);
+      return;
+    }
+
+    const questions = FORM_CONFIG.questions;
+    const cols = details
+      .map((d) => ({ meta: d.inspection, matched: matchAnswers(questions, d.answers) }))
+      .sort((a, b) => String(a.meta.submitted).localeCompare(String(b.meta.submitted)));
+
+    const rows = questions.map((q, i) => ({
+      q,
+      vals: cols.map((c) => {
+        const r = c.matched[i];
+        return { a: r ? r.answer : "", n: r && r.notes ? r.notes : "" };
+      })
+    }));
+    const differing = rows.map((r, i) => ({ r, i })).filter(({ r }) => new Set(r.vals.map((v) => v.a)).size > 1);
+
+    // default choice: the newest column that has an answer
+    const choice = {};
+    differing.forEach(({ r, i }) => {
+      let pick = cols.length - 1;
+      for (let c = cols.length - 1; c >= 0; c--) {
+        if (r.vals[c].a) {
+          pick = c;
+          break;
+        }
+      }
+      choice[i] = pick;
+    });
+
+    function finalFor(i) {
+      const r = rows[i];
+      const c = choice[i] !== undefined ? choice[i] : cols.length - 1;
+      const a = r.vals[c].a;
+      // keep the notes of the chosen side; if it has none, fall back to the newest note among the others
+      let n = r.vals[c].n;
+      for (let k = cols.length - 1; !n && k >= 0; k--) n = r.vals[k].n;
+      return { a, n };
+    }
+
+    body.innerHTML = "";
+    byId("mergeTitle").textContent = `Compare & merge · room ${room}`;
+
+    const head = el("div", "mg-cols");
+    cols.forEach((c, k) => {
+      const d = el("div", "mg-col");
+      d.appendChild(el("strong", "", `${k === cols.length - 1 ? "Newest · " : ""}${c.meta.date || ""}`));
+      d.appendChild(el("small", "", c.meta.inspector ? `by ${c.meta.inspector}` : "inspector not recorded"));
+      d.appendChild(el("small", "", `sent ${fmtDateTime(c.meta.submitted)}`));
+      head.appendChild(d);
+    });
+    body.appendChild(head);
+
+    const preview = el("div", "rv-chips mg-preview");
+    body.appendChild(preview);
+
+    function updatePreview() {
+      const t = { yes: 0, no: 0, na: 0, unsure: 0, blank: 0 };
+      questions.forEach((q, i) => {
+        const a = finalFor(i).a;
+        if (a && t[a] !== undefined) t[a]++;
+        else t.blank++;
+      });
+      preview.innerHTML = "";
+      preview.appendChild(el("span", "rv-chip", "Result:"));
+      preview.appendChild(el("span", "rv-chip y", `${t.yes} Yes`));
+      preview.appendChild(el("span", "rv-chip n", `${t.no} No`));
+      preview.appendChild(el("span", "rv-chip", `${t.na} N/A`));
+      preview.appendChild(el("span", "rv-chip u", `${t.unsure} Not sure`));
+      preview.appendChild(el("span", "rv-chip", `${t.blank} Unanswered`));
+      preview.appendChild(el("span", "rv-chip", `${t.yes + t.no + t.na}/${questions.length} answered`));
+    }
+
+    if (!differing.length) {
+      body.appendChild(
+        el(
+          "div",
+          "rv-ok",
+          "These inspections have the same answers for every question. There is nothing to choose: " +
+            "close this and use “Keep newest only” instead."
+        )
+      );
+    } else {
+      body.appendChild(
+        el(
+          "p",
+          "status-note",
+          `${differing.length} question${differing.length === 1 ? "" : "s"} differ; the other ` +
+            `${questions.length - differing.length} are identical and are kept as they are. ` +
+            "The newest answer is selected; click another to change it."
+        )
+      );
+
+      const table = el("div", "mg-table");
+      differing.forEach(({ r, i }) => {
+        const row = el("div", "mg-row");
+        row.appendChild(el("div", "mg-q", `${r.q.code} — ${r.q.question}`));
+        const opts = el("div", "mg-opts");
+        cols.forEach((c, k) => {
+          const label = el("label", "opt mg-opt");
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = `mg-${i}`;
+          input.checked = choice[i] === k;
+          input.addEventListener("change", () => {
+            choice[i] = k;
+            updatePreview();
+          });
+          const [text, cls] = ANSWER_FACE[r.vals[k].a] || [r.vals[k].a, "b"];
+          const face = el("span", cls, text);
+          label.appendChild(input);
+          label.appendChild(face);
+          if (r.vals[k].n) label.appendChild(el("small", "", r.vals[k].n));
+          opts.appendChild(label);
+        });
+        row.appendChild(opts);
+        table.appendChild(row);
+      });
+      body.appendChild(table);
+    }
+
+    updatePreview();
+
+    // who is saving this merged version
+    const who = el("label", "mg-who");
+    who.appendChild(el("span", "", "Your name (required) "));
+    const name = document.createElement("input");
+    name.type = "text";
+    name.maxLength = 60;
+    name.value = typeof lastInspector === "function" ? lastInspector() : "";
+    who.appendChild(name);
+    body.appendChild(who);
+
+    const closeBtn = el("button", "secondary", "Close");
+    closeBtn.type = "button";
+    closeBtn.addEventListener("click", closeMerge);
+    const save = el("button", "primary", "Merge into one version");
+    save.type = "button";
+    save.disabled = !differing.length;
+
+    save.addEventListener("click", async () => {
+      const inspector = name.value.trim();
+      if (inspector.length < 2) {
+        alert("Please enter your name.");
+        return;
+      }
+      if (!DB.live) {
+        alert("Merging needs the live connection to the spreadsheet.");
+        return;
+      }
+      const newest = cols[cols.length - 1].meta;
+      const id = newId();
+      const timestamp = new Date().toISOString();
+      const payload = questions.map((q, i) => {
+        const f = finalFor(i);
+        return {
+          timestamp,
+          inspectionId: id,
+          floor: newest.floor,
+          room: newest.room,
+          restroomType: newest.type,
+          code: q.code,
+          section: sectionTitleForCode(q.code),
+          question: q.question,
+          answer: f.a,
+          recommendation: f.a === "no" ? (q.solutionsIfNo || []).join("; ") : "",
+          notes: f.n,
+          inspectionDate: newest.date,
+          inspector,
+          basedOn: cols.map((c) => c.meta.id).join(",")
+        };
+      });
+
+      [closeBtn, save, back].forEach((b) => {
+        b.disabled = true;
+      });
+      save.textContent = "Saving…";
+      try {
+        const res = await fetch(WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.status !== "success" && data.status !== "duplicate") throw new Error(data.message || "Not saved");
+        if (typeof rememberInspector === "function") rememberInspector(inspector);
+        await refresh();
+        closeMerge();
+      } catch (err) {
+        console.error(err);
+        alert("The merge could not be saved. Nothing was changed; you can try again.");
+        [closeBtn, save, back].forEach((b) => {
+          b.disabled = false;
+        });
+        save.textContent = "Merge into one version";
+      }
+    });
+
+    actions.appendChild(closeBtn);
+    actions.appendChild(back);
+    actions.appendChild(save);
   }
 
   // ---------- Database: filters / sorting ----------
@@ -973,7 +1310,7 @@
         missing: p && p.hasCurrent ? Math.max(0, DB.total - p.answered - (p.unsure || 0)) : 0
       };
     },
-    completeInspection,
+    editInspection,
     refresh,
     showTab
   };

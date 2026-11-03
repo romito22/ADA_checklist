@@ -259,9 +259,9 @@ function showRoomInfo() {
     roomInfo.textContent =
       `Already inspected (${info.date}). Submitting again is recorded as a re-inspection; the newest one counts. `;
     if (info.missing > 0 && info.currentId && !completing) {
-      const b = el("button", "link-btn", `Fill in its ${info.missing} unanswered question${info.missing === 1 ? "" : "s"} instead`);
+      const b = el("button", "link-btn", `Edit it and fill in its ${info.missing} unanswered question${info.missing === 1 ? "" : "s"} instead`);
       b.type = "button";
-      b.addEventListener("click", () => window.ADA.completeInspection(info.currentId));
+      b.addEventListener("click", () => window.ADA.editInspection(info.currentId));
       roomInfo.appendChild(b);
     }
   } else {
@@ -366,7 +366,9 @@ function checkDraft() {
     session.timestamp = d.timestamp || null;
     Object.keys(state).forEach((k) => delete state[k]);
     Object.assign(state, d.state || {});
-    completing = d.completing || null;
+    const c = d.completing || null;
+    // drafts saved by an earlier version stored a single fromId
+    completing = c ? Object.assign({}, c, { fromIds: c.fromIds || (c.fromId ? [c.fromId] : []) }) : null;
     applyMeta(d.meta || {});
     showCompleteBanner();
     draftBanner.hidden = true;
@@ -411,10 +413,10 @@ function applyMeta(meta) {
 function showCompleteBanner() {
   if (completing) {
     completeText.textContent =
-      `Completing the inspection of room ${completing.room} (${completing.date}` +
+      `Editing the inspection of room ${completing.room} (${completing.date}` +
       `${completing.inspector ? `, by ${completing.inspector}` : ""}). ` +
-      "The highlighted questions are still unanswered or marked Not sure. " +
-      "Submitting saves a new, complete inspection and keeps the old one as history.";
+      "Change any answer or fill in the highlighted ones (unanswered or Not sure). " +
+      "Saving creates a new version that replaces it in the dashboard; the old one is kept as history.";
     completeBanner.hidden = false;
   } else {
     completeBanner.hidden = true;
@@ -422,7 +424,7 @@ function showCompleteBanner() {
 }
 
 document.getElementById("completeCancel").addEventListener("click", () => {
-  if (hasContent() && !confirm("Stop completing this inspection and clear the form?")) return;
+  if (hasContent() && !confirm("Stop editing this inspection and clear the form?")) return;
   resetAll();
 });
 
@@ -444,8 +446,8 @@ function matchAnswers(questions, answers) {
   );
 }
 
-// Load an existing inspection into the form so its blanks can be filled in. It is submitted as a
-// NEW inspection (own id) that points back to the original with BasedOn; nothing is overwritten.
+// Load an existing inspection into the form to edit it or fill in its blanks. It is submitted as a
+// NEW version (own id) that points back to the original with BasedOn; nothing is overwritten.
 window.SURVEY = {
   loadFrom(rec) {
     if (!FORM_CONFIG) return;
@@ -460,7 +462,7 @@ window.SURVEY = {
     });
 
     const m = rec.inspection;
-    completing = { fromId: m.id, room: m.room, date: m.date, inspector: m.inspector };
+    completing = { fromIds: [m.id], room: m.room, date: m.date, inspector: m.inspector };
 
     // open every section that still has something to answer
     FORM_CONFIG.questions.forEach((q) => {
@@ -470,7 +472,8 @@ window.SURVEY = {
       }
     });
 
-    applyMeta({ room: m.room, floor: m.floor, type: m.type, date: today(), inspector: lastInspector() });
+    // the visit date is kept; the inspector field becomes whoever is saving this version
+    applyMeta({ room: m.room, floor: m.floor, type: m.type, date: m.date || today(), inspector: lastInspector() });
     showCompleteBanner();
     render();
     saveDraft();
@@ -777,7 +780,7 @@ function buildPayload() {
     notes: state[`${q.id}_notes`] || "",
     inspectionDate: metaState.date,
     inspector: metaState.inspector,
-    basedOn: completing ? completing.fromId : ""
+    basedOn: completing ? completing.fromIds.join(",") : ""
   }));
 }
 
