@@ -183,16 +183,31 @@ function readOverrides_() {
 
 // Statuses: Current (the one that counts), Previous (older inspection kept as history),
 // Superseded (replaced inside the same session), Duplicate (same answers sent again),
-// Ignored (set manually).
+// Revised (replaced by an edited or merged version), Ignored (set manually).
 function analyze_() {
   var data = readAnswers_();
   var overrides = readOverrides_();
-  var byRoom = {};
+  var byRoom = {}, byId = {};
 
   data.list.forEach(function (o) {
     o.override = overrides[o.id] || '';
     o.status = '';
     o.note = '';
+    byId[o.id] = o;
+  });
+
+  // A version (an edit or a merge) replaces the inspections it is based on, as long as it is not ignored.
+  // Ignoring the version brings those inspections back.
+  var replacedBy = {};
+  data.list.forEach(function (o) {
+    if (o.override === 'ignore' || !o.basedOn) return;
+    o.basedOn.split(',').forEach(function (id) {
+      id = id.trim();
+      if (id && id !== o.id && byId[id]) replacedBy[id] = o;
+    });
+  });
+
+  data.list.forEach(function (o) {
     (byRoom[o.room] = byRoom[o.room] || []).push(o);
   });
 
@@ -200,8 +215,15 @@ function analyze_() {
     var list = byRoom[room].sort(function (a, b) { return a.ms - b.ms; });
     var live = [];
     list.forEach(function (o) {
-      if (o.override === 'ignore') { o.status = 'Ignored'; o.note = 'Ignored manually'; }
-      else live.push(o);
+      if (o.override === 'ignore') {
+        o.status = 'Ignored'; o.note = 'Ignored manually';
+      } else if (replacedBy[o.id] && o.override !== 'current') {
+        var by = replacedBy[o.id];
+        o.status = 'Revised';
+        o.note = 'Replaced by the edited or merged version ' + by.id.slice(0, 8) + (by.inspector ? ' (' + by.inspector + ')' : '');
+      } else {
+        live.push(o);
+      }
     });
 
     var sessions = [], cur = null;
@@ -252,7 +274,11 @@ function analyze_() {
   });
 
   data.list.forEach(function (o) {
-    if (o.status === 'Current' && !o.note && o.basedOn) o.note = 'Completed from inspection ' + o.basedOn.slice(0, 8);
+    if (o.status === 'Current' && !o.note && o.basedOn) {
+      o.note = o.basedOn.indexOf(',') >= 0
+        ? 'Merged from ' + o.basedOn.split(',').length + ' inspections'
+        : 'Edited version of inspection ' + o.basedOn.slice(0, 8);
+    }
   });
 
   return data;
