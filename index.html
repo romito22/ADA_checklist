@@ -170,6 +170,69 @@
       border: 1px solid #cfe0ff;
     }
 
+    /* ---------- Loader: "73 Genome", crossing DNA strands (pure CSS) ---------- */
+    :root { --ink: currentColor; }
+
+    .ld-dna {
+      --s: 8px;                      /* dot size; everything scales from it */
+      display: inline-flex;
+      gap: var(--s);
+      color: #1e5eff;
+      vertical-align: middle;
+    }
+
+    .ld-dna.sm { --s: 5px; }
+    .ld-dna.light { color: #fff; }
+
+    .ld-dna i { position: relative; width: var(--s); height: calc(var(--s) * 4.5); }
+
+    .ld-dna i::before,
+    .ld-dna i::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: var(--s); height: var(--s);
+      border-radius: 50%;
+      background: var(--ink);
+      animation: dna 1.4s ease-in-out infinite;
+    }
+
+    .ld-dna i::after { opacity: .4; }
+    .ld-dna i:nth-child(1)::before { animation-delay: 0s; }
+    .ld-dna i:nth-child(1)::after  { animation-delay: -.7s; }
+    .ld-dna i:nth-child(2)::before { animation-delay: -.15s; }
+    .ld-dna i:nth-child(2)::after  { animation-delay: -.85s; }
+    .ld-dna i:nth-child(3)::before { animation-delay: -.3s; }
+    .ld-dna i:nth-child(3)::after  { animation-delay: -1s; }
+    .ld-dna i:nth-child(4)::before { animation-delay: -.45s; }
+    .ld-dna i:nth-child(4)::after  { animation-delay: -1.15s; }
+    .ld-dna i:nth-child(5)::before { animation-delay: -.6s; }
+    .ld-dna i:nth-child(5)::after  { animation-delay: -1.3s; }
+
+    @keyframes dna {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(calc(var(--s) * 3.5)); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ld-dna i::before, .ld-dna i::after { animation: none; }
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #5b657a;
+      margin: 8px 0 14px;
+    }
+
+    .loading.center {
+      justify-content: center;
+      padding: 28px 0;
+    }
+
     /* ---------- Tabs ---------- */
     .tabs {
       display: flex;
@@ -1214,7 +1277,7 @@
     </nav>
 
     <section id="panel-dashboard" class="panel" role="tabpanel">
-      <p id="dashStatus" class="status-note">Loading…</p>
+      <p id="dashStatus" class="status-note loading"><span class="ld-dna" role="img" aria-label="Loading"><i></i><i></i><i></i><i></i><i></i></span><span>Loading…</span></p>
       <div id="kpis" class="kpis"></div>
 
       <h3 class="section-title">Progress by floor</h3>
@@ -1245,7 +1308,7 @@
     </section>
 
     <section id="panel-database" class="panel" role="tabpanel">
-      <p id="dbStatus" class="status-note">Loading…</p>
+      <p id="dbStatus" class="status-note loading"><span class="ld-dna" role="img" aria-label="Loading"><i></i><i></i><i></i><i></i><i></i></span><span>Loading…</span></p>
 
       <div class="db-toolbar">
         <div class="seg" id="dbViews">
@@ -1425,7 +1488,7 @@
       <div id="preview"></div>
     </section>
 
-    <p class="app-version">Version 2026-11-03.6</p>
+    <p class="app-version">Version 2026-11-03.7</p>
   </div>
 
   <div id="reviewModal" class="modal" hidden>
@@ -1452,7 +1515,7 @@
     </div>
   </div>
 
-  <script src="./app.js?v=2026-11-03.6"></script>
-  <script src="./dashboard.js?v=2026-11-03.6"></script>
+  <script src="./app.js?v=2026-11-03.7"></script>
+  <script src="./dashboard.js?v=2026-11-03.7"></script>
 </body>
 </html>

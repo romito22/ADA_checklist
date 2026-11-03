@@ -319,8 +319,10 @@
 
   function setHistoryStatus(text, kind) {
     const node = byId("historyStatus");
-    node.textContent = text;
     node.className = `status-note ${kind || ""}`;
+    node.innerHTML = "";
+    if (kind === "busy") node.appendChild(makeLoader(text, { small: true }));
+    else node.textContent = text;
   }
 
   async function applyOverrides(changes, buttons, clicked) {
@@ -561,7 +563,7 @@
     const actions = byId("detailActions");
     body.innerHTML = "";
     actions.innerHTML = "";
-    body.appendChild(el("p", "status-note", "Loading…"));
+    body.appendChild(makeLoader("Loading…", { center: true }));
     byId("detailModal").hidden = false;
     document.body.style.overflow = "hidden";
 
@@ -782,7 +784,7 @@
     const actions = byId("mergeActions");
     body.innerHTML = "";
     actions.innerHTML = "";
-    body.appendChild(el("p", "status-note", "Loading the inspections…"));
+    body.appendChild(makeLoader("Loading the inspections…", { center: true }));
 
     const back = el("button", "secondary", "Back");
     back.type = "button";

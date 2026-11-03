@@ -61,6 +61,21 @@ const INSPECTOR_KEY = "ada_inspector_names_v1";
 const session = { id: newId(), timestamp: null };
 let sending = false;
 
+// Loader (CSS lives in index.html): five crossing strands plus an optional label.
+function makeLoader(text, opts) {
+  const o = opts || {};
+  const wrap = document.createElement("div");
+  wrap.className = `loading${o.center ? " center" : ""}`;
+  wrap.setAttribute("role", "status");
+  const dna = document.createElement("span");
+  dna.className = `ld-dna${o.small ? " sm" : ""}${o.light ? " light" : ""}`;
+  dna.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < 5; i++) dna.appendChild(document.createElement("i"));
+  wrap.appendChild(dna);
+  if (text) wrap.appendChild(document.createTextNode(text));
+  return wrap;
+}
+
 // ---------- Helpers ----------
 function newId() {
   if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -925,7 +940,7 @@ async function sendInspection() {
   if (sending) return;
   setBusy(true);
   reviewBody.querySelectorAll(".rv-error").forEach((n) => n.remove());
-  const status = el("p", "rv-meta", "Sending… this can take a few seconds. Please don't close this page.");
+  const status = makeLoader("Sending… this can take a few seconds. Please don't close this page.");
   status.id = "sendStatus";
   reviewBody.appendChild(status);
 
