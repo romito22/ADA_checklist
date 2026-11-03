@@ -315,7 +315,15 @@
   const fmtDateTime = (iso) =>
     iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
 
-  async function applyOverrides(changes, buttons) {
+  const openRooms = new Set();
+
+  function setHistoryStatus(text, kind) {
+    const node = byId("historyStatus");
+    node.textContent = text;
+    node.className = `status-note ${kind || ""}`;
+  }
+
+  async function applyOverrides(changes, buttons, clicked) {
     if (!DB.live) {
       alert("Changing this needs the live connection to the spreadsheet.");
       return;
@@ -323,16 +331,22 @@
     buttons.forEach((b) => {
       b.disabled = true;
     });
+    const original = clicked ? clicked.textContent : "";
+    if (clicked) clicked.textContent = "Saving…";
+    setHistoryStatus("Saving… this takes a few seconds while the sheet is recalculated.", "busy");
     try {
       const data = await post({ action: "setInspectionOverrides", changes });
       if (!data.ok) throw new Error(data.error || "Could not save");
       await refresh();
+      setHistoryStatus("Saved ✓ The dashboard now uses the updated labels.", "ok");
     } catch (err) {
       console.error(err);
+      setHistoryStatus("Could not save that change. Nothing was changed.", "error");
       alert("Could not save that change.");
       buttons.forEach((b) => {
         b.disabled = false;
       });
+      if (clicked) clicked.textContent = original;
     }
   }
 
@@ -369,6 +383,11 @@
       const items = hist.filter((h) => h.room === room);
       const counts = items.find((h) => h.status === "Current");
       const box = el("details", "hist");
+      box.open = openRooms.has(room);
+      box.addEventListener("toggle", () => {
+        if (box.open) openRooms.add(room);
+        else openRooms.delete(room);
+      });
       const sum = document.createElement("summary");
       sum.appendChild(el("strong", "", room));
       sum.appendChild(el("span", "hist-meta", `${typeOf(room)} · ${items.length} inspections`));
@@ -415,7 +434,8 @@
           [{ inspectionId: newest.id, override: "current" }].concat(
             others.map((h) => ({ inspectionId: h.id, override: "ignore" }))
           ),
-          buttons
+          buttons,
+          keep
         );
       });
 
@@ -456,21 +476,21 @@
         if (h.status !== "Current") {
           const b = el("button", "btn-sm secondary", "Keep this one");
           b.type = "button";
-          b.addEventListener("click", () => applyOverrides([{ inspectionId: h.id, override: "current" }], buttons.concat(rowButtons)));
+          b.addEventListener("click", () => applyOverrides([{ inspectionId: h.id, override: "current" }], buttons.concat(rowButtons), b));
           rowButtons.push(b);
           actions.appendChild(b);
         }
         if (h.status !== "Ignored") {
           const b = el("button", "btn-sm secondary", "Ignore");
           b.type = "button";
-          b.addEventListener("click", () => applyOverrides([{ inspectionId: h.id, override: "ignore" }], buttons.concat(rowButtons)));
+          b.addEventListener("click", () => applyOverrides([{ inspectionId: h.id, override: "ignore" }], buttons.concat(rowButtons), b));
           rowButtons.push(b);
           actions.appendChild(b);
         }
         if (h.override) {
           const b = el("button", "btn-sm secondary", "Undo my choice");
           b.type = "button";
-          b.addEventListener("click", () => applyOverrides([{ inspectionId: h.id, override: "" }], buttons.concat(rowButtons)));
+          b.addEventListener("click", () => applyOverrides([{ inspectionId: h.id, override: "" }], buttons.concat(rowButtons), b));
           rowButtons.push(b);
           actions.appendChild(b);
         }

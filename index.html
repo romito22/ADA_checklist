@@ -219,6 +219,9 @@
       color: #b3261e;
     }
 
+    .status-note.ok { color: #1b7a3a; }
+    .status-note.busy { color: #8a5a00; }
+
     /* ---------- Progress bars ---------- */
     .bar {
       height: 12px;
@@ -1319,6 +1322,7 @@
           <em>Keep this one</em> and <em>Ignore</em> work one inspection at a time.</p>
       </details>
 
+      <p id="historyStatus" class="status-note" aria-live="polite"></p>
       <div id="historyList"></div>
     </section>
 
