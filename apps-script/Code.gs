@@ -223,10 +223,15 @@ function analyze_() {
       winners.push(best);
     });
 
-    winners.forEach(function (w, i) {
-      var last = i === winners.length - 1;
-      w.status = last ? 'Current' : 'Previous';
-      w.note = last ? '' : 'Earlier inspection (history)';
+    // Current = the most recent session whose inspection is complete (no blank answers).
+    // If none is complete, the most recent one.
+    var pick = winners[winners.length - 1];
+    for (var j = winners.length - 1; j >= 0; j--) {
+      if (data.total - winners[j].answered - winners[j].unsure <= 0) { pick = winners[j]; break; }
+    }
+    winners.forEach(function (w) {
+      w.status = w === pick ? 'Current' : 'Previous';
+      w.note = w === pick ? '' : (w.ms > pick.ms ? 'Newer but incomplete (kept as history)' : 'Earlier inspection (history)');
     });
 
     var forced = live.filter(function (o) { return o.override === 'current'; }).pop();
