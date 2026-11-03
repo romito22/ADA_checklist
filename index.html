@@ -159,6 +159,166 @@
       font-size: 12px;
     }
 
+    button.resource-link {
+      font-size: 16px;
+      font-weight: 700;
+      padding: 10px 16px;
+      border: 1px solid #cfe0ff;
+    }
+
+    /* ---------- Restroom list modal ---------- */
+    #restroomModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 25, 50, 0.55);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 12px;
+      overflow-y: auto;
+      z-index: 50;
+    }
+
+    #restroomModal.open {
+      display: flex;
+    }
+
+    .rl-card {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 980px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .rl-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .rl-header h2 {
+      margin: 0;
+      color: #1e3fb8;
+      font-size: 1.4rem;
+    }
+
+    #rlClose {
+      background: #ddd;
+      color: #111;
+    }
+
+    .rl-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+      background: #f8f9fc;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .rl-controls label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-weight: 800;
+      font-size: 13px;
+      color: #1e5eff;
+    }
+
+    .rl-controls label.rl-check {
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 10px;
+    }
+
+    .rl-controls select {
+      padding: 8px 36px 8px 10px;
+      font-size: 14px;
+    }
+
+    #rlStatus {
+      font-size: 13px;
+      font-weight: 700;
+      color: #5b657a;
+      margin: 0 0 10px;
+    }
+
+    #rlStatus.error {
+      color: #b3261e;
+    }
+
+    .rl-table-wrap {
+      overflow-x: auto;
+    }
+
+    table.rl-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .rl-table th {
+      text-align: left;
+      padding: 8px;
+      background: #edf3ff;
+      color: #0f3fb8;
+      white-space: nowrap;
+    }
+
+    .rl-table td {
+      padding: 4px;
+      border-bottom: 1px solid #e6eaf3;
+      vertical-align: middle;
+    }
+
+    .rl-table td input[type="text"] {
+      width: 100%;
+      padding: 7px 8px;
+      font-size: 14px;
+      border-radius: 8px;
+    }
+
+    .rl-table td.rl-floor input { width: 56px; }
+    .rl-table td.rl-room input { width: 96px; }
+    .rl-table td.rl-type input { min-width: 190px; }
+    .rl-table td.rl-notes input { min-width: 200px; }
+
+    .rl-table td.rl-cat {
+      white-space: nowrap;
+      font-weight: 700;
+      color: #3b4a6b;
+      padding: 4px 8px;
+    }
+
+    .rl-table td.rl-done {
+      text-align: center;
+    }
+
+    .rl-table td.rl-state {
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      color: #5b657a;
+      padding: 4px 8px;
+    }
+
+    .rl-table td.rl-state.error { color: #b3261e; }
+    .rl-table td.rl-state.ok { color: #1b7a3a; }
+
+    .rl-table tr.rl-group td {
+      background: #f1f4fb;
+      font-weight: 900;
+      color: #1e3fb8;
+      padding: 8px;
+    }
+
     @media (max-width: 700px) {
       body {
         padding: 18px;
@@ -198,6 +358,10 @@
       >
         Open Pictures &amp; PDF
       </a>
+
+      <button id="restroomListBtn" class="resource-link" type="button">
+        Restroom List
+      </button>
     </div>
 
     <div class="meta">
@@ -241,6 +405,69 @@
     <div id="preview"></div>
   </div>
 
+  <div id="restroomModal" aria-hidden="true">
+    <div class="rl-card" role="dialog" aria-labelledby="rlTitle">
+      <div class="rl-header">
+        <h2 id="rlTitle">Restroom List</h2>
+        <button id="rlClose" type="button">Close</button>
+      </div>
+
+      <div class="rl-controls">
+        <label>
+          Type
+          <select id="rlType">
+            <option value="all">All</option>
+            <option value="men">Men</option>
+            <option value="women">Women</option>
+            <option value="other">Other (single, family, mother's room…)</option>
+          </select>
+        </label>
+
+        <label>
+          Floor
+          <select id="rlFloor">
+            <option value="all">All floors</option>
+          </select>
+        </label>
+
+        <label>
+          Sort by
+          <select id="rlSort">
+            <option value="floor">Floor, then room</option>
+            <option value="type">Type, then floor</option>
+            <option value="room">Room</option>
+            <option value="sheet">Sheet order</option>
+          </select>
+        </label>
+
+        <label class="rl-check">
+          <input id="rlGroup" type="checkbox" checked>
+          Group by floor
+        </label>
+      </div>
+
+      <p id="rlStatus">Loading…</p>
+
+      <div class="rl-table-wrap">
+        <table class="rl-table">
+          <thead>
+            <tr>
+              <th>Floor</th>
+              <th>Floor Category</th>
+              <th>Room</th>
+              <th>Restroom Type</th>
+              <th>Done</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rlBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <script src="./app.js"></script>
+  <script src="./restroom-list.js"></script>
 </body>
 </html>
