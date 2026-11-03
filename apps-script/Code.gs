@@ -76,7 +76,9 @@ function submitInspection_(data) {
     rows = rows.map(function (r) { while (r.length < width) r.push(''); return r; });
 
     var start = sheet.getLastRow() + 1;
-    if (width >= 12) sheet.getRange(start, 12, rows.length, 1).setNumberFormat('@'); // keep InspectionDate as text
+    // Keep Code ("3.10") and InspectionDate as text; otherwise Sheets turns "3.10" into the number 3.1.
+    if (width >= 6) sheet.getRange(start, 6, rows.length, 1).setNumberFormat('@');
+    if (width >= 12) sheet.getRange(start, 12, rows.length, 1).setNumberFormat('@');
     sheet.getRange(start, 1, rows.length, width).setValues(rows);
     SpreadsheetApp.flush();
 
@@ -385,6 +387,7 @@ function inspectionDetail_(id) {
     }
     answers.push({
       code: String(row[idx['Code']]),
+      question: String(row[idx['Question']] || ''),
       answer: String(row[idx['Answer']]).trim().toLowerCase(),
       notes: String(row[idx['Notes']] || '')
     });
