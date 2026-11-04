@@ -5,6 +5,7 @@
 const SHEET_NAME = "answers";
 const RESTROOM_SHEET = "restroom_list";
 const INSPECTIONS_SHEET = "inspections";
+const DELETED_SHEET = "restroom_deleted";
 const RESTROOM_FIELDS = { floor: 1, type: 2, room: 3, done: 4, notes: 5 }; // columns A..E
 const ANSWER_HEADERS = [
   "Timestamp", "InspectionID", "Floor", "Room", "Restroom Type", "Code", "Section",
@@ -453,6 +454,7 @@ function restroomData_() {
 function restroomPost_(data) {
   try {
     if (data.action === 'addRestroom') return addRestroom_(data);
+    if (data.action === 'deleteRestroom') return deleteRestroom_(data);
     if (data.action === 'setInspectionOverride') return setInspectionOverride_(data);
     if (data.action === 'setInspectionOverrides') return setInspectionOverrides_(data);
     if (data.action !== 'updateRestroom') return json_({ ok: false, error: 'Unknown action' });
@@ -505,6 +507,41 @@ function addRestroom_(data) {
     sheet.getRange(row, 1, 1, 5).setValues([[String(data.floor || ''), safeCell_(type), safeCell_(room), '', safeCell_(String(data.notes || ''))]]);
     sheet.getRange(row, 6).setFormula('=IF(A' + row + '="","","Floor "&A' + row + ')');
     return json_({ ok: true, row: row });
+  } catch (err) {
+    return json_({ ok: false, error: String(err) });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Removes a restroom from the list (and so from the Dashboard). Its inspections in `answers` are NOT touched.
+// The removed row is copied to the tab `restroom_deleted` first, so it can be restored by hand.
+function deleteRestroom_(data) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName(RESTROOM_SHEET);
+    var row = Number(data.row);
+    if (!(row >= 2 && row <= sheet.getLastRow())) return json_({ ok: false, error: 'Row out of range' });
+
+    var vals = sheet.getRange(row, 1, 1, 5).getValues()[0];
+    if (String(vals[2]).trim() !== String(data.expectedRoom).trim()) {
+      return json_({ ok: false, error: 'Row changed in the sheet. Reload the list.' });
+    }
+
+    var log = ss.getSheetByName(DELETED_SHEET);
+    if (!log) {
+      log = ss.insertSheet(DELETED_SHEET);
+      log.appendRow(['DeletedAt', 'Floor', 'Type', 'Room', 'Done', 'Notes', 'DeletedBy']);
+      log.getRange(1, 1, 1, 7).setFontWeight('bold');
+      log.setFrozenRows(1);
+      log.getRange(2, 4, log.getMaxRows() - 1, 1).setNumberFormat('@');
+    }
+    log.appendRow([new Date().toISOString(), vals[0], vals[1], String(vals[2]), vals[3], vals[4], String(data.by || '')]);
+
+    sheet.deleteRow(row);
+    return json_({ ok: true });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
   } finally {
