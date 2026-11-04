@@ -535,9 +535,9 @@ function render() {
     header.style.justifyContent = "space-between";
     header.style.alignItems = "center";
     header.style.padding = "12px 16px";
-    header.style.background = "#eef3ff";
+    header.style.background = "rgba(20, 32, 48, 0.55)";
     header.style.fontWeight = "900";
-    header.style.color = "#0f3fb8";
+    header.style.color = "#f5f5f5";
 
     const t = document.createElement("span");
     const c = perSection[section.id];

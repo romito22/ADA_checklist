@@ -1383,7 +1383,7 @@
   
     /* ---------- Sky background + glass cards ---------- */
     body {
-      --sky-opacity: 1;
+      --sky-opacity: 0.82;
       background: #fff;
       min-height: 100vh;
     }
@@ -1395,8 +1395,8 @@
     .container { background: transparent; box-shadow: none; padding: 0; }
 
     .glass3d {
-      --filter-glass3d: blur(3px) brightness(0.86) saturate(1.2);
-      --color-glass3d: transparent;
+      --filter-glass3d: blur(2.5px) brightness(0.86) saturate(1.2);
+      --color-glass3d: rgba(255, 255, 255, 0.02);
       --noise-glass3d: url("https://www.transparenttextures.com/patterns/egg-shell.png");
       position: relative;
       z-index: 4;
@@ -1448,6 +1448,32 @@
       .panel.glass3d { padding: 16px; }
       .app-head { padding: 16px; }
     }
+  
+    /* ---------- Light-gray text scale (replaces the blues) ---------- */
+    :root { --g1: #f5f5f5; --g2: #e6e6e6; --g3: #d2d2d2; --g4: #bdbdbd; }
+    .app-head, .tabs, .panel { color: var(--g2); text-shadow: 0 1px 2px rgba(10, 25, 45, 0.35); }
+    h1, .t-ada, .kpi .value, .section-title, .howto summary, .survey-progress, .db-table tr.group td,
+    .board .col h4, .meta-field label, .mg-who, .link-btn, .row-link, .kpi.link .go, .ld-dna { color: var(--g1); }
+    .t-sub, .tab, .db-table td.c-last, .db-table td.c-prog .pct, .room-info, .form-hint { color: var(--g2); }
+    .tab:hover, .tab.active { color: #111; text-shadow: none; }
+    .loading, .status-note, .kpi .label, .kpi .sub, .kpi .value .of, .legend, .room-head, .room-row .cell .sub,
+    details.resolved > summary, .hist-meta, .hist-row small, .room-row .name small, .floor-row .meta-text,
+    .db-table th, .db-table td.c-state, .board .card .note, .hist-head .hist-note, .detail-meta small,
+    .mg-col small, .mg-opt small, .rv-meta, .rv-list small { color: var(--g3); }
+    .del-btn, .app-version { color: var(--g4); }
+    .app-head .icon-btn, .app-head .resource-link { background: rgba(20, 32, 48, 0.35); border-color: rgba(255, 255, 255, 0.35); color: var(--g1); }
+    .app-head .icon-btn img { filter: brightness(1.6); }
+    .kpi, .howto, .meta, .room-info {
+      background: rgba(20, 32, 48, 0.30);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+    .form-hint, .draft-banner.complete { background: rgba(20, 32, 48, 0.30); border-color: rgba(255, 255, 255, 0.28); color: var(--g2); }
+    .room-row { border-bottom-color: rgba(255, 255, 255, 0.25); }
+    .db-table tr.group td { background: rgba(20, 32, 48, 0.35); }
+    .tag.men { background: rgba(255, 255, 255, 0.2); color: var(--g1); }
+    .modal-card { background: rgba(28, 40, 56, 0.9); color: var(--g2); }
+    .modal-card h2, .modal-card h3 { color: var(--g1); }
+    .modal-card input, .modal-card select, .modal-card textarea { color: #111; }
   </style>
 </head>
 
@@ -1681,7 +1707,7 @@
       <div id="preview"></div>
     </section>
 
-    <p class="app-version">Version 2026-11-03.14</p>
+    <p class="app-version">Version 2026-11-03.16</p>
   </div>
 
   <div id="reviewModal" class="modal" hidden>
@@ -1708,7 +1734,7 @@
     </div>
   </div>
 
-  <script src="./app.js?v=2026-11-03.14"></script>
-  <script src="./dashboard.js?v=2026-11-03.14"></script>
+  <script src="./app.js?v=2026-11-03.16"></script>
+  <script src="./dashboard.js?v=2026-11-03.16"></script>
 </body>
 </html>
