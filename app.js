@@ -1076,7 +1076,6 @@ async function loadConfig() {
   const res = await fetch("./form-config.json");
   FORM_CONFIG = await res.json();
 
-  titleEl.textContent = FORM_CONFIG?.meta?.title || "ADA Restroom Accessibility Inspection";
   descEl.textContent = FORM_CONFIG?.meta?.description || "";
 
   floorSelect.addEventListener("change", updateMeta);

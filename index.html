@@ -233,6 +233,68 @@
       padding: 28px 0;
     }
 
+    /* ---------- Header: title lockup + icon buttons ---------- */
+    h1 {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1;
+    }
+
+    .t-ada {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+
+    .t-sub {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: .03em;
+      color: #3b4a6b;
+    }
+
+    .resource-links {
+      gap: 8px;
+      margin: 12px 0 16px;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: #edf3ff;
+      border: 1px solid #cfe0ff;
+      color: #0f3fb8;
+      transition: background .18s ease, transform .18s ease, border-color .18s ease;
+    }
+
+    .icon-btn:hover,
+    .icon-btn:focus-visible {
+      background: #dfeaff;
+      border-color: #aecaff;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .icon-btn img,
+    .icon-btn svg { display: block; }
+
+    @media (max-width: 700px) {
+      .t-ada { font-size: 2.4rem; }
+      .t-sub { font-size: .95rem; }
+    }
+
+    /* Duplicates: keep the help compact so the tool itself is what you see */
+    #panel-duplicates .howto { font-size: 13px; padding: 8px 12px; }
+    #panel-duplicates .howto ul { margin: 8px 0 4px; }
+    #panel-duplicates .howto li { margin-bottom: 5px; line-height: 1.35; }
+    #panel-duplicates .howto p { margin: 6px 0 2px; }
+    #panel-duplicates .status-note { font-size: 13px; margin-bottom: 10px; }
+
     /* ---------- Tabs: rounded bar, sliding pill, badges ---------- */
     .tabs {
       position: relative;
@@ -1291,26 +1353,17 @@
 
 <body>
   <div class="container">
-    <h1 id="title">ADA Restroom Accessibility Inspection</h1>
+    <h1 id="title"><span class="t-ada">ADA</span><span class="t-sub">Restroom Accessibility Inspection</span></h1>
     <p id="description"></p>
 
     <div class="resource-links">
-      <a
-        class="resource-link"
-        href="https://docs.google.com/spreadsheets/d/1GLxfyx65D8W94cdcY2W9scA3eZ_7jMYfd3PzWFIRbnM/edit?usp=sharing"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Open Google Sheet
+      <a class="icon-btn" href="https://docs.google.com/spreadsheets/d/1GLxfyx65D8W94cdcY2W9scA3eZ_7jMYfd3PzWFIRbnM/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
+         aria-label="Open Google Sheet" title="Open Google Sheet">
+        <img src="./icons/google-sheets.svg" alt="" width="20" height="15">
       </a>
-
-      <a
-        class="resource-link"
-        href="https://drive.google.com/file/d/1aChsj8vlbDjdQJ3nxck4Cjoe4AA0aQdv/view?usp=drivesdk"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Open Pictures &amp; PDF
+      <a class="icon-btn form" href="https://drive.google.com/file/d/1aChsj8vlbDjdQJ3nxck4Cjoe4AA0aQdv/view?usp=drivesdk" target="_blank" rel="noopener noreferrer"
+         aria-label="Open pictures and PDF" title="Open pictures and PDF">
+        <svg viewBox="0 0 122.88 120.45" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><g><path fill-rule="evenodd" clip-rule="evenodd" d="M8.89,0h105.1c4.9,0,8.89,4,8.89,8.89v102.68c0,4.88-4,8.89-8.89,8.89H8.89c-4.88,0-8.89-4-8.89-8.89V8.89 C-0.01,4,3.99,0,8.89,0L8.89,0L8.89,0z M66.17,91.29h30.49c1.95,0,3.54,1.61,3.54,3.54v6.69c0,1.94-1.61,3.54-3.54,3.54H66.17 c-1.93,0-3.54-1.59-3.54-3.54v-6.69C62.63,92.88,64.22,91.29,66.17,91.29L66.17,91.29z M26.23,60.79h70.42 c1.71,0,3.27,0.7,4.41,1.84l0.01,0.01c1.13,1.13,1.83,2.69,1.83,4.41v8.85c0,1.71-0.7,3.28-1.83,4.41l-0.01,0.01 c-1.13,1.13-2.69,1.83-4.41,1.83H26.23c-1.71,0-3.27-0.7-4.41-1.83l-0.01-0.01c-1.13-1.13-1.83-2.69-1.83-4.41v-8.85 c0-1.71,0.7-3.27,1.83-4.41l0.01-0.01C22.96,61.49,24.52,60.79,26.23,60.79L26.23,60.79z M96.65,66.21H26.23 c-0.23,0-0.44,0.09-0.59,0.24c-0.15,0.15-0.24,0.36-0.24,0.59v8.85c0,0.23,0.09,0.44,0.24,0.59c0.15,0.15,0.36,0.24,0.59,0.24 h70.42c0.23,0,0.44-0.09,0.59-0.24c0.15-0.15,0.24-0.36,0.24-0.59v-8.85c0-0.23-0.09-0.44-0.24-0.59 C97.09,66.3,96.88,66.21,96.65,66.21L96.65,66.21z M26.23,33h70.42c1.71,0,3.27,0.7,4.41,1.83l0.01,0.01 c1.13,1.13,1.83,2.69,1.83,4.41v8.85c0,1.71-0.7,3.28-1.83,4.41l-0.01,0.01c-1.13,1.13-2.69,1.83-4.41,1.83H26.23 c-1.71,0-3.27-0.7-4.41-1.83l-0.01-0.01c-1.13-1.13-1.83-2.69-1.83-4.41v-8.85c0-1.71,0.7-3.27,1.83-4.41l0.01-0.01 C22.96,33.7,24.52,33,26.23,33L26.23,33z M96.65,38.42H26.23c-0.23,0-0.44,0.09-0.59,0.24c-0.15,0.15-0.24,0.36-0.24,0.59v8.85 c0,0.23,0.09,0.44,0.24,0.59c0.15,0.15,0.36,0.24,0.59,0.24h70.42c0.23,0,0.44-0.09,0.59-0.24c0.15-0.15,0.24-0.36,0.24-0.59v-8.85 c0-0.23-0.09-0.44-0.24-0.59C97.09,38.51,96.88,38.42,96.65,38.42L96.65,38.42z M114.8,27.01H8.46v82.6c0,0.68,0.27,1.28,0.72,1.74 c0.46,0.46,1.06,0.72,1.74,0.72H112.3c0.68,0,1.28-0.27,1.74-0.72c0.46-0.46,0.72-1.06,0.72-1.74v-82.6H114.8L114.8,27.01 L114.8,27.01z M105.53,9.64c2.42,0,4.39,1.97,4.39,4.39c0,2.42-1.96,4.39-4.39,4.39c-2.43,0-4.39-1.97-4.39-4.39 C101.13,11.6,103.09,9.64,105.53,9.64L105.53,9.64L105.53,9.64z M75.76,9.64c2.42,0,4.39,1.97,4.39,4.39 c0,2.42-1.97,4.39-4.39,4.39s-4.39-1.97-4.39-4.39C71.36,11.6,73.32,9.64,75.76,9.64L75.76,9.64L75.76,9.64z M90.64,9.64 c2.42,0,4.39,1.97,4.39,4.39c0,2.42-1.97,4.39-4.39,4.39s-4.39-1.97-4.39-4.39C86.25,11.6,88.21,9.64,90.64,9.64L90.64,9.64 L90.64,9.64z"/></g></svg>
       </a>
     </div>
 
@@ -1425,30 +1478,21 @@
     <section id="panel-duplicates" class="panel" role="tabpanel">
       <p id="historySummary" class="status-note"></p>
 
-      <details class="howto" open>
-        <summary>What do these labels mean? Where is everything saved?</summary>
+      <details class="howto">
+        <summary>How to read this</summary>
         <ul>
-          <li><span class="tag complete">Counts</span> (Current): the inspection the Dashboard uses for this
-            restroom. It is the most recent one that is complete.</li>
-          <li><span class="tag none">Older inspection</span> (Previous): an earlier visit, kept as history. It is not counted.</li>
-          <li><span class="tag progress">Replaced</span> (Superseded): sent only minutes after another one for the same
-            restroom, so it is treated as the same visit. The more complete or later one replaces it.</li>
-          <li><span class="tag progress">Duplicate</span>: exactly the same answers as another one sent just before.</li>
-          <li><span class="tag none">Replaced by newer version</span> (Revised): an edited or merged version took its
-            place. It stays in the sheet as history.</li>
-          <li><span class="tag none">Ignored</span>: you chose to ignore it.</li>
+          <li><span class="tag complete">Counts</span> the one the Dashboard uses (newest complete).</li>
+          <li><span class="tag none">Older inspection</span> an earlier visit, kept as history.</li>
+          <li><span class="tag progress">Replaced</span> / <span class="tag progress">Duplicate</span>
+            sent again minutes apart; flagged automatically.</li>
+          <li><span class="tag none">Replaced by newer version</span> an edit or merge took its place.</li>
+          <li><span class="tag none">Ignored</span> you chose to skip it.</li>
         </ul>
-        <p><strong>Nothing is ever deleted.</strong> Every answer is stored in the Google Sheet, tab <code>answers</code>.
-          The tab <code>inspections</code> has one row per inspection with its label.
-          <a href="https://docs.google.com/spreadsheets/d/1GLxfyx65D8W94cdcY2W9scA3eZ_7jMYfd3PzWFIRbnM/edit"
-             target="_blank" rel="noopener noreferrer">Open the sheet</a></p>
-        <p><strong>What can you do?</strong> Open a restroom to see its inspections.
-          <em>View details</em> shows who did it and which questions were left blank.
-          <em>Edit</em> opens an inspection in the survey to correct it; saving creates a new version that replaces it.
-          <em>Compare &amp; merge</em> shows only the questions where inspections differ, lets you pick the right answer for
-          each and saves one merged version, so the statistics use a single, corrected record.
-          <em>Keep newest only</em> keeps the latest and ignores the rest (best for accidental resubmits).
-          <em>Keep this one</em> and <em>Ignore</em> work one inspection at a time.</p>
+        <p><strong>Edit</strong> corrects one inspection · <strong>Compare &amp; merge</strong> picks the right answer
+          per question · <strong>Keep newest only</strong> is for resends.</p>
+        <p>Nothing is deleted. All answers are in the sheet (tab <code>answers</code>); tab <code>inspections</code>
+          has the labels.
+          <a href="https://docs.google.com/spreadsheets/d/1GLxfyx65D8W94cdcY2W9scA3eZ_7jMYfd3PzWFIRbnM/edit" target="_blank" rel="noopener noreferrer">Open the sheet</a></p>
       </details>
 
       <p id="historyStatus" class="status-note" aria-live="polite"></p>
@@ -1534,7 +1578,7 @@
       <div id="preview"></div>
     </section>
 
-    <p class="app-version">Version 2026-11-03.8</p>
+    <p class="app-version">Version 2026-11-03.10</p>
   </div>
 
   <div id="reviewModal" class="modal" hidden>
@@ -1561,7 +1605,7 @@
     </div>
   </div>
 
-  <script src="./app.js?v=2026-11-03.8"></script>
-  <script src="./dashboard.js?v=2026-11-03.8"></script>
+  <script src="./app.js?v=2026-11-03.10"></script>
+  <script src="./dashboard.js?v=2026-11-03.10"></script>
 </body>
 </html>

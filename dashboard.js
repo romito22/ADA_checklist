@@ -385,13 +385,12 @@
       hist.filter((h) => h.status === "Superseded" || h.status === "Duplicate").map((h) => h.room)
     );
 
+    const extras = auto + prev + ignored + revised;
     byId("historySummary").textContent =
-      `${auto + prev + ignored + revised} extra inspections in ${new Set(hist.map((h) => h.room)).size} restrooms: ` +
-      `${auto} flagged automatically as duplicates or replaced submissions, ${prev} older inspections kept as history` +
-      (revised ? `, ${revised} replaced by an edited or merged version` : "") +
-      (ignored ? `, ${ignored} ignored by you` : "") +
-      `. ${needsReview.size ? `${needsReview.size} restroom${needsReview.size === 1 ? "" : "s"} still need a decision.` : "All resolved."} ` +
-      "Nothing is deleted; the one labeled Counts is what the Dashboard uses.";
+      (needsReview.size
+        ? `${needsReview.size} restroom${needsReview.size === 1 ? "" : "s"} to review`
+        : "Everything is resolved") +
+      ` · ${extras} extra inspection${extras === 1 ? "" : "s"} kept as history. Nothing is deleted.`;
 
     const rooms = [...new Set(hist.map((h) => h.room))];
     const needBoxes = [];
