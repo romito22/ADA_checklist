@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>ADA Restroom Inspection</title>
+  <link rel="icon" type="image/svg+xml" href="./icons/app-icon.svg">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -1432,6 +1434,9 @@
     .glass3d > * { position: relative; z-index: 6; }
     .glass3d > .tab-pill { position: absolute; }
 
+    .title-row { display: flex; align-items: center; gap: 18px; }
+    .app-mark { height: 96px; width: auto; flex: none; filter: invert(1) brightness(.92); opacity: .95; }
+    @media (max-width: 600px) { .title-row { gap: 12px; } .app-mark { height: 68px; } }
     .app-head { padding: 22px 26px 18px; margin-bottom: 16px; }
     .app-head .resource-links { margin: 12px 0 0; }
     .tabs.glass3d { border: 0; background: none; padding: 8px; margin: 0 0 16px; overflow-x: auto; }
@@ -1515,7 +1520,10 @@
 <body>
   <div class="container">
     <header class="app-head glass3d">
-    <h1 id="title"><span class="t-ada">ADA</span><span class="t-sub">Restroom Accessibility Inspection</span></h1>
+    <div class="title-row">
+      <img class="app-mark" src="./icons/oldmaninwheelchair.svg" alt="" width="84" height="100">
+      <h1 id="title"><span class="t-ada">ADA</span><span class="t-sub">Restroom Accessibility Inspection</span></h1>
+    </div>
     <p id="description"></p>
 
     <div class="resource-links">
@@ -1742,7 +1750,7 @@
       <div id="preview"></div>
     </section>
 
-    <p class="app-version">Version 2026-11-04.20</p>
+    <p class="app-version">Version 2026-11-04.21</p>
   </div>
 
   <div id="reviewModal" class="modal" hidden>
@@ -1769,7 +1777,7 @@
     </div>
   </div>
 
-  <script src="./app.js?v=2026-11-04.20"></script>
-  <script src="./dashboard.js?v=2026-11-04.20"></script>
+  <script src="./app.js?v=2026-11-04.21"></script>
+  <script src="./dashboard.js?v=2026-11-04.21"></script>
 </body>
 </html>
