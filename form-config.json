@@ -148,7 +148,7 @@
       "solutionsIfNo": [
         "Install signs"
       ],
-      "referenceImage": "./pictures/ada3_img_1.jpeg",
+      "referenceImage": "./pictures/question-3-2-directional-signage.svg",
       "requireAnswer": true
     },
     {
@@ -161,7 +161,7 @@
       "solutionsIfNo": [
         "Install sign"
       ],
-      "referenceImage": "./pictures/ada3_img_2.jpeg",
+      "referenceImage": "./pictures/703-7-2-1.svg",
       "requireAnswer": true
     },
     {
@@ -244,7 +244,7 @@
         "Install tactile sign",
         "Relocate sign"
       ],
-      "referenceImage": "./pictures/ada4_img_2.jpeg",
+      "referenceImage": "./pictures/703-4-2.svg",
       "requireAnswer": true
     },
     {
@@ -258,7 +258,7 @@
         "Install tactile sign",
         "Relocate sign"
       ],
-      "referenceImage": "./pictures/ada5_img_1.jpeg",
+      "referenceImage": "./pictures/703-4-1.svg",
       "requireAnswer": true
     },
     {
@@ -272,7 +272,7 @@
         "Install offset hinges",
         "Alter the doorway"
       ],
-      "referenceImage": "./pictures/ada5_img_2.jpeg",
+      "referenceImage": "./pictures/404-2-3.svg",
       "requireAnswer": true
     },
     {
@@ -287,7 +287,7 @@
         "Reconfigure walls",
         "Add automatic door opener"
       ],
-      "referenceImage": "./pictures/ada5_img_3.jpeg",
+      "referenceImage": "./pictures/404-2-4-1a.svg",
       "requireAnswer": true
     },
     {
@@ -396,7 +396,7 @@
       "solutionsIfNo": [
         "Change hardware height"
       ],
-      "referenceImage": "./pictures/ada7_img_2.png",
+      "referenceImage": "./pictures/308-2-1.svg",
       "requireAnswer": true
     },
     {
@@ -438,7 +438,7 @@
         "Remove inner door",
         "Change door swing"
       ],
-      "referenceImage": "./pictures/ada8_img_2.jpeg",
+      "referenceImage": "./pictures/404-2-6.svg",
       "requireAnswer": true
     },
     {
@@ -490,7 +490,7 @@
       "solutionsIfNo": [
         "Move or remove partitions, fixtures or objects such as trash cans"
       ],
-      "referenceImage": "./pictures/ada10_img_1.jpeg",
+      "referenceImage": "./pictures/304-3-2.svg",
       "requireAnswer": true
     },
     {
@@ -560,7 +560,7 @@
         "Alter lavatory",
         "Replace lavatory"
       ],
-      "referenceImage": "./pictures/ada11_img_2.jpeg",
+      "referenceImage": "./pictures/305-5.svg",
       "requireAnswer": true
     },
     {
@@ -574,7 +574,7 @@
         "Alter lavatory",
         "Replace lavatory"
       ],
-      "referenceImage": "./pictures/ada11_img_3.jpeg",
+      "referenceImage": "./pictures/306-2.svg",
       "requireAnswer": true
     },
     {
@@ -602,7 +602,7 @@
         "Alter lavatory",
         "Replace lavatory"
       ],
-      "referenceImage": "./pictures/ada12_img_2.jpeg",
+      "referenceImage": "./pictures/306-3.svg",
       "requireAnswer": true
     },
     {
@@ -616,7 +616,7 @@
         "Alter lavatory",
         "Replace lavatory"
       ],
-      "referenceImage": "./pictures/ada12_img_3.jpeg",
+      "referenceImage": "./pictures/306-2.svg",
       "requireAnswer": true
     },
     {
@@ -785,7 +785,7 @@
         "Replace toilet",
         "Move partition"
       ],
-      "referenceImage": "./pictures/ada15_img_1.jpeg",
+      "referenceImage": "./pictures/604-2.svg",
       "requireAnswer": true
     },
     {
@@ -798,7 +798,7 @@
       "solutionsIfNo": [
         "Alter room/compartment for clearance"
       ],
-      "referenceImage": "./pictures/ada15_img_2.jpeg",
+      "referenceImage": "./pictures/604-3-1.svg",
       "requireAnswer": true
     },
     {
@@ -827,7 +827,7 @@
         "Relocate grab bar",
         "Relocate objects"
       ],
-      "referenceImage": "./pictures/ada16_img_2.jpeg",
+      "referenceImage": "./pictures/604-5-1.svg",
       "requireAnswer": true
     },
     {
@@ -842,7 +842,7 @@
         "Relocate grab bar",
         "Relocate objects"
       ],
-      "referenceImage": "./pictures/ada16_img_2.jpeg",
+      "referenceImage": "./pictures/604-5-1.svg",
       "requireAnswer": true
     },
     {
@@ -857,7 +857,7 @@
         "Relocate grab bar",
         "Relocate objects"
       ],
-      "referenceImage": "./pictures/ada16_img_2.jpeg",
+      "referenceImage": "./pictures/604-5-1.svg",
       "requireAnswer": true
     },
     {
@@ -872,7 +872,7 @@
         "Relocate grab bar",
         "Relocate objects"
       ],
-      "referenceImage": "./pictures/608-2-1.svg",
+      "referenceImage": "./pictures/604-5-1.svg",
       "requireAnswer": true
     },
     {
@@ -932,7 +932,7 @@
         "Relocate grab bar",
         "Relocate objects"
       ],
-      "referenceImage": "./pictures/ada17_img_2.jpeg",
+      "referenceImage": "./pictures/604-5-2.svg",
       "requireAnswer": true
     },
     {
@@ -947,7 +947,7 @@
         "Relocate grab bar",
         "Relocate objects"
       ],
-      "referenceImage": "./pictures/ada17_img_2.jpeg",
+      "referenceImage": "./pictures/604-5-2.svg",
       "requireAnswer": true
     },
     {
@@ -962,7 +962,7 @@
         "Relocate grab bar",
         "Relocate objects"
       ],
-      "referenceImage": "./pictures/ada17_img_2.jpeg",
+      "referenceImage": "./pictures/604-5-2.svg",
       "requireAnswer": true
     },
     {
@@ -977,7 +977,7 @@
         "Relocate grab bar",
         "Relocate objects"
       ],
-      "referenceImage": "./pictures/608-2-2.svg",
+      "referenceImage": "./pictures/604-5-2.svg",
       "requireAnswer": true
     },
     {
@@ -1090,7 +1090,7 @@
       "solutionsIfNo": [
         "Relocate dispenser"
       ],
-      "referenceImage": "./pictures/ada19_img_1.png",
+      "referenceImage": "./pictures/604-7.svg",
       "requireAnswer": true
     },
     {
@@ -1103,7 +1103,7 @@
       "solutionsIfNo": [
         "Relocate dispenser"
       ],
-      "referenceImage": "./pictures/ada19_img_2.jpeg",
+      "referenceImage": "./pictures/604-7.svg",
       "requireAnswer": true
     },
     {
@@ -1156,7 +1156,7 @@
       "solutionsIfNo": [
         "Remove obstructions"
       ],
-      "referenceImage": "./pictures/ada20_img_2.jpeg",
+      "referenceImage": "./pictures/604-8-1-2.svg",
       "requireAnswer": true
     },
     {
@@ -1222,7 +1222,7 @@
       "solutionsIfNo": [
         "Widen compartment"
       ],
-      "referenceImage": "./pictures/ada21_img_4.jpeg",
+      "referenceImage": "./pictures/604-8-1-1.svg",
       "requireAnswer": true
     },
     {
@@ -1235,7 +1235,7 @@
       "solutionsIfNo": [
         "Widen compartment"
       ],
-      "referenceImage": "./pictures/ada22_img_1.jpeg",
+      "referenceImage": "./pictures/604-8-1-1.svg",
       "requireAnswer": true
     },
     {
@@ -1248,7 +1248,7 @@
       "solutionsIfNo": [
         "Alter compartment"
       ],
-      "referenceImage": "./pictures/ada22_img_2.jpeg",
+      "referenceImage": "./pictures/604-8-1-1.svg",
       "requireAnswer": true
     },
     {
@@ -1262,7 +1262,7 @@
         "Reverse door swing",
         "Alter compartment"
       ],
-      "referenceImage": "./pictures/ada22_img_3.jpeg",
+      "referenceImage": "./pictures/604-8-1-2.svg",
       "requireAnswer": true
     }
   ]

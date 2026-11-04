@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      :root {
+        --bg-color: #ffffff;
+        --text-color: #000000;
+        --line-color: #000000;
+        --accent-color: #0066cc;
+        --warning-color: #ff6600;
+        --success-color: #00aa00;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg-color: #1a1a1a;
+          --text-color: #ffffff;
+          --line-color: #ffffff;
+          --accent-color: #66b3ff;
+          --warning-color: #ffaa33;
+          --success-color: #66ff66;
+        }
+
+        svg {
+          background-color: #1a1a1a;
+        }
+
+        .bg-light {
+          fill: #2a2a2a;
+        }
+
+        .line {
+          stroke: #ffffff;
+        }
+
+        .text {
+          fill: #ffffff;
+        }
+
+        .accent-bg {
+          fill: #003366;
+        }
+      }
+
+      @media (prefers-color-scheme: light) {
+        svg {
+          background-color: #ffffff;
+        }
+
+        .bg-light {
+          fill: #f5f5f5;
+        }
+
+        .line {
+          stroke: #000000;
+        }
+
+        .text {
+          fill: #000000;
+        }
+
+        .accent-bg {
+          fill: #e6f2ff;
+        }
+      }
+
+      .title {
+        font-size: 28px;
+        font-weight: bold;
+        font-family: Arial, sans-serif;
+      }
+
+      .subtitle {
+        font-size: 16px;
+        font-weight: bold;
+        font-family: Arial, sans-serif;
+      }
+
+      .label {
+        font-size: 14px;
+        font-family: Arial, sans-serif;
+      }
+
+      .small-text {
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+      }
+
+      .compliance-text {
+        font-size: 11px;
+        font-family: Arial, sans-serif;
+      }
+
+      .wall {
+        fill: #cccccc;
+        stroke: #000000;
+        stroke-width: 2;
+      }
+
+      .door {
+        fill: #8b7355;
+        stroke: #000000;
+        stroke-width: 2;
+      }
+
+      .sign {
+        fill: #ffffcc;
+        stroke: #000000;
+        stroke-width: 2;
+      }
+
+      .check {
+        fill: #00aa00;
+        stroke: #000000;
+        stroke-width: 2;
+      }
+
+      .x-mark {
+        fill: #ff4444;
+        stroke: #000000;
+        stroke-width: 2;
+      }
+
+      .arrow {
+        fill: none;
+        stroke: #ff6600;
+        stroke-width: 3;
+        stroke-linecap: round;
+      }
+
+      .path-line {
+        fill: none;
+        stroke: #0066cc;
+        stroke-width: 2;
+        stroke-dasharray: 5,5;
+      }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" class="bg-light"/>
+
+  <!-- Title -->
+  <text x="600" y="35" class="title text" text-anchor="middle">ADA-602.2: Directional Signage for Accessible Toilet Rooms</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="65" class="subtitle text" text-anchor="middle">Question 3.2: Signage at Inaccessible Restroom Entrances</text>
+
+  <!-- ===== LEFT SECTION: MAIN FLOOR PLAN ===== -->
+  <g id="floorplan">
+    <!-- Hallway background -->
+    <rect x="80" y="100" width="480" height="550" fill="#eeeeee" stroke="#000000" stroke-width="2"/>
+
+    <!-- Hallway label -->
+    <text x="320" y="130" class="label text" text-anchor="middle">HALLWAY / CORRIDOR</text>
+
+    <!-- ===== INACCESSIBLE RESTROOM (LEFT) ===== -->
+    <g id="inaccessible-restroom">
+      <!-- Door -->
+      <rect x="100" y="200" width="80" height="120" class="door"/>
+      <!-- Door handle -->
+      <circle cx="175" cy="260" r="4" fill="#666666"/>
+
+      <!-- Door label -->
+      <text x="140" y="360" class="label text" text-anchor="middle">INACCESSIBLE</text>
+      <text x="140" y="380" class="small-text text" text-anchor="middle">Restroom</text>
+
+      <!-- Red X indicating problem -->
+      <g transform="translate(140, 180)">
+        <circle cx="0" cy="0" r="20" class="x-mark"/>
+        <line x1="-12" y1="-12" x2="12" y2="12" stroke="#ffffff" stroke-width="3"/>
+        <line x1="12" y1="-12" x2="-12" y2="12" stroke="#ffffff" stroke-width="3"/>
+      </g>
+    </g>
+
+    <!-- DIRECTIONAL SIGN (between doors) -->
+    <g id="directional-sign">
+      <!-- Sign post -->
+      <rect x="220" y="210" width="15" height="100" fill="#666666" stroke="#000000" stroke-width="1"/>
+
+      <!-- Sign panel -->
+      <rect x="190" y="160" width="75" height="60" class="sign"/>
+
+      <!-- Arrow on sign -->
+      <line x1="210" y1="180" x2="245" y2="180" class="arrow"/>
+      <polygon points="245,180 235,175 235,185" fill="#ff6600"/>
+
+      <!-- Sign text -->
+      <text x="227" y="205" class="small-text" text-anchor="middle" fill="#000000">Accessible</text>
+      <text x="227" y="218" class="small-text" text-anchor="middle" fill="#000000">Restroom →</text>
+    </g>
+
+    <!-- ===== ACCESSIBLE RESTROOM (RIGHT) ===== -->
+    <g id="accessible-restroom">
+      <!-- Door -->
+      <rect x="380" y="200" width="80" height="120" class="door"/>
+      <!-- Door handle -->
+      <circle cx="455" cy="260" r="4" fill="#666666"/>
+
+      <!-- Door label -->
+      <text x="420" y="360" class="label text" text-anchor="middle">ACCESSIBLE</text>
+      <text x="420" y="380" class="small-text text" text-anchor="middle">Restroom</text>
+
+      <!-- Green checkmark indicating compliance -->
+      <g transform="translate(420, 180)">
+        <circle cx="0" cy="0" r="20" class="check"/>
+        <path d="M -8 -2 L -2 5 L 10 -8" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <!-- International Symbol of Accessibility -->
+      <g transform="translate(420, 295)">
+        <!-- Circle background -->
+        <circle cx="0" cy="0" r="18" fill="#0066cc" stroke="#000000" stroke-width="1.5"/>
+        <!-- Figure -->
+        <circle cx="0" cy="-6" r="3" fill="#ffffff"/>
+        <rect x="-2" y="-3" width="4" height="5" fill="#ffffff"/>
+        <rect x="-3" y="2" width="6" height="8" fill="#ffffff"/>
+        <line x1="-4" y1="2" x2="-6" y2="-1" stroke="#ffffff" stroke-width="1.5"/>
+        <line x1="4" y1="2" x2="6" y2="-1" stroke="#ffffff" stroke-width="1.5"/>
+        <line x1="-3" y1="10" x2="-5" y2="14" stroke="#ffffff" stroke-width="1.5"/>
+        <line x1="3" y1="10" x2="5" y2="14" stroke="#ffffff" stroke-width="1.5"/>
+      </g>
+    </g>
+
+    <!-- ===== USER FLOW PATH ===== -->
+    <!-- Path showing user navigation -->
+    <path d="M 140 150 L 140 125 L 320 125 L 420 150" class="path-line"/>
+    <text x="320" y="115" class="small-text text" text-anchor="middle">User Path</text>
+  </g>
+
+  <!-- ===== RIGHT SECTION: COMPLIANCE CHECKLIST ===== -->
+  <g id="checklist">
+    <!-- Checklist box background -->
+    <rect x="620" y="100" width="540" height="550" class="accent-bg" stroke="#000000" stroke-width="2"/>
+
+    <!-- Checklist title -->
+    <text x="890" y="135" class="subtitle text" text-anchor="middle">COMPLIANCE REQUIREMENTS</text>
+
+    <!-- Checklist items -->
+    <g id="checklist-items">
+      <!-- Item 1 -->
+      <g transform="translate(640, 160)">
+        <rect x="0" y="0" width="20" height="20" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        <line x1="4" y1="10" x2="8" y2="16" stroke="#000000" stroke-width="2"/>
+        <line x1="8" y1="16" x2="16" y2="4" stroke="#000000" stroke-width="2"/>
+        <text x="30" y="15" class="small-text text">Each inaccessible restroom has directional signage</text>
+      </g>
+
+      <!-- Item 2 -->
+      <g transform="translate(640, 200)">
+        <rect x="0" y="0" width="20" height="20" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        <line x1="4" y1="10" x2="8" y2="16" stroke="#000000" stroke-width="2"/>
+        <line x1="8" y1="16" x2="16" y2="4" stroke="#000000" stroke-width="2"/>
+        <text x="30" y="15" class="small-text text">Sign points to nearest accessible toilet room</text>
+      </g>
+
+      <!-- Item 3 -->
+      <g transform="translate(640, 240)">
+        <rect x="0" y="0" width="20" height="20" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        <line x1="4" y1="10" x2="8" y2="16" stroke="#000000" stroke-width="2"/>
+        <line x1="8" y1="16" x2="16" y2="4" stroke="#000000" stroke-width="2"/>
+        <text x="30" y="15" class="small-text text">Sign contains International Symbol of Accessibility</text>
+      </g>
+
+      <!-- Item 4 -->
+      <g transform="translate(640, 280)">
+        <rect x="0" y="0" width="20" height="20" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        <line x1="4" y1="10" x2="8" y2="16" stroke="#000000" stroke-width="2"/>
+        <line x1="8" y1="16" x2="16" y2="4" stroke="#000000" stroke-width="2"/>
+        <text x="30" y="15" class="small-text text">Accessible restroom entrance clearly marked</text>
+      </g>
+
+      <!-- Item 5 -->
+      <g transform="translate(640, 320)">
+        <rect x="0" y="0" width="20" height="20" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        <line x1="4" y1="10" x2="8" y2="16" stroke="#000000" stroke-width="2"/>
+        <line x1="8" y1="16" x2="16" y2="4" stroke="#000000" stroke-width="2"/>
+        <text x="30" y="15" class="small-text text">Directional sign must be visible and at proper height</text>
+      </g>
+
+      <!-- Item 6 -->
+      <g transform="translate(640, 360)">
+        <rect x="0" y="0" width="20" height="20" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        <line x1="4" y1="10" x2="8" y2="16" stroke="#000000" stroke-width="2"/>
+        <line x1="8" y1="16" x2="16" y2="4" stroke="#000000" stroke-width="2"/>
+        <text x="30" y="15" class="small-text text">Text and symbols must be clear and legible</text>
+      </g>
+
+      <!-- Item 7 -->
+      <g transform="translate(640, 400)">
+        <rect x="0" y="0" width="20" height="20" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        <line x1="4" y1="10" x2="8" y2="16" stroke="#000000" stroke-width="2"/>
+        <line x1="8" y1="16" x2="16" y2="4" stroke="#000000" stroke-width="2"/>
+        <text x="30" y="15" class="small-text text">Sign must use contrasting colors for visibility</text>
+      </g>
+
+      <!-- Item 8 -->
+      <g transform="translate(640, 440)">
+        <rect x="0" y="0" width="20" height="20" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        <line x1="4" y1="10" x2="8" y2="16" stroke="#000000" stroke-width="2"/>
+        <line x1="8" y1="16" x2="16" y2="4" stroke="#000000" stroke-width="2"/>
+        <text x="30" y="15" class="small-text text">Apply to ALL inaccessible restroom entrances</text>
+      </g>
+    </g>
+
+    <!-- ADA Reference -->
+    <text x="640" y="510" class="compliance-text text" font-weight="bold">ADA Standard Reference:</text>
+    <text x="640" y="528" class="compliance-text text">ADA-602.2: Directional Signs</text>
+    <text x="640" y="545" class="compliance-text text">Must comply with Section 703: Signs</text>
+    <text x="640" y="562" class="compliance-text text">• Font: sans-serif minimum 32 points</text>
+    <text x="640" y="579" class="compliance-text text">• Colors: High contrast (minimum 70%)</text>
+    <text x="640" y="596" class="compliance-text text">• Symbol of Accessibility: Section 703.7</text>
+  </g>
+
+  <!-- ===== INSPECTION TIP SECTION ===== -->
+  <g id="inspection-tips">
+    <rect x="80" y="670" width="1080" height="100" fill="#fff4e6" stroke="#ff6600" stroke-width="2"/>
+
+    <text x="100" y="695" class="subtitle text" fill="#ff6600">FIELD INSPECTION GUIDANCE:</text>
+
+    <text x="100" y="720" class="small-text text">1. Identify all toilet room entrances in the facility</text>
+    <text x="100" y="740" class="small-text text">2. Determine which are accessible and which are inaccessible</text>
+    <text x="100" y="760" class="small-text text">3. At each INACCESSIBLE entrance, verify directional sign is present, readable, and points to accessible facilities</text>
+  </g>
+</svg>
