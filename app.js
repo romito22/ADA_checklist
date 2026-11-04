@@ -524,11 +524,11 @@ function render() {
     }
 
     const wrapper = document.createElement("div");
-    wrapper.style.border = "1px solid #ddd";
+    wrapper.style.border = "1px solid rgba(255, 255, 255, 0.28)";
     wrapper.style.borderRadius = "12px";
     wrapper.style.margin = "12px 0";
     wrapper.style.overflow = "hidden";
-    wrapper.style.background = "#fff";
+    wrapper.style.background = "rgba(20, 32, 48, 0.30)";
 
     const header = document.createElement("div");
     header.style.display = "flex";
@@ -590,18 +590,18 @@ function renderQuestion(q) {
   if (completing && (!state[q.id] || state[q.id] === "unsure")) block.classList.add("needs-answer");
   block.style.marginBottom = "18px";
   block.style.paddingBottom = "14px";
-  block.style.borderBottom = "1px solid #eee";
+  block.style.borderBottom = "1px solid rgba(255, 255, 255, 0.2)";
 
   const title = document.createElement("div");
   title.style.fontWeight = "900";
-  title.style.color = "#0f3fb8";
+  title.style.color = "#f5f5f5";
   title.style.marginBottom = "4px";
   title.textContent = `${q.code} — ${q.title}`;
   block.appendChild(title);
 
   const prompt = document.createElement("div");
   prompt.style.fontWeight = "800";
-  prompt.style.color = "#1e5eff";
+  prompt.style.color = "#e6e6e6";
   prompt.style.marginBottom = "8px";
   prompt.textContent = q.question;
   block.appendChild(prompt);
@@ -610,7 +610,7 @@ function renderQuestion(q) {
   if (Array.isArray(q.measurements) && q.measurements.length) {
     const m = document.createElement("div");
     m.style.fontSize = "14px";
-    m.style.color = "#111";
+    m.style.color = "#e6e6e6";
     m.style.marginBottom = "8px";
     m.innerHTML = `<strong>Measurements:</strong> ${escapeHtml(q.measurements.join(", "))}`;
     block.appendChild(m);
@@ -620,7 +620,7 @@ function renderQuestion(q) {
   if (q.help && String(q.help).trim()) {
     const help = document.createElement("div");
     help.style.fontSize = "14px";
-    help.style.color = "#555";
+    help.style.color = "#d2d2d2";
     help.style.marginBottom = "8px";
     help.textContent = q.help;
     block.appendChild(help);
@@ -707,7 +707,8 @@ function renderQuestion(q) {
     const sol = document.createElement("div");
     sol.style.marginTop = "8px";
     sol.style.padding = "10px 12px";
-    sol.style.background = "#fff4f4";
+    sol.style.background = "rgba(120, 35, 35, 0.5)";
+    sol.style.color = "#f5f5f5";
     sol.style.borderLeft = "4px solid red";
     sol.style.borderRadius = "8px";
 
