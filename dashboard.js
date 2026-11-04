@@ -10,10 +10,10 @@
   const STATUS_CLASS = {
     Complete: "complete",
     "In progress": "progress",
-    "Needs review": "review",
+    "Confirm answers": "review",
     "Not started": "none"
   };
-  const STATUS_ORDER = ["Complete", "Needs review", "In progress", "Not started"];
+  const STATUS_ORDER = ["Complete", "Confirm answers", "In progress", "Not started"];
   const HISTORY_CLASS = {
     Current: "complete",
     Previous: "none",
@@ -79,7 +79,7 @@
     if (!p.has) return "Not started";
     const blank = DB.total - p.answered - (p.unsure || 0);
     if (blank > 0) return "In progress";
-    if (p.unsure > 0) return "Needs review";
+    if (p.unsure > 0) return "Confirm answers";
     return "Complete";
   }
 
@@ -200,10 +200,6 @@
     const count = (s) => statuses.filter((x) => x === s).length;
     const inspected = n - count("Not started");
     const answered = infos.reduce((a, p) => a + p.answered, 0);
-    const yes = infos.reduce((a, p) => a + p.yes, 0);
-    const no = infos.reduce((a, p) => a + p.no, 0);
-    const compliance = yes + no ? Math.round((yes / (yes + no)) * 100) : 0;
-    const received = Object.values(DB.progress).reduce((a, p) => a + p.inspections, 0);
     const flagged = DB.history.filter((h) => ["Superseded", "Duplicate"].includes(h.status)).length;
 
     const kpis = byId("kpis");
@@ -228,16 +224,19 @@
     };
     const goDuplicates = () => showTab("duplicates");
 
-    [
+    const toConfirm = count("Confirm answers");
+    const cards = [
       ["Complete", count("Complete"), "See these restrooms", goStatus("Complete")],
       ["In progress", count("In progress"), "See which questions are missing", goStatus("In progress")],
-      ["Needs review", count("Needs review"), "See these restrooms", goStatus("Needs review")],
-      ["Not started", count("Not started"), "See these restrooms", goStatus("Not started")],
-      ["Inspections received", received, "Review inspections", goDuplicates],
-      ["Duplicates to review", flagged, flagged ? "Review duplicates" : "Nothing to review", goDuplicates],
-      ["Yes rate (yes ÷ yes+no)", `${compliance}%`, null, null]
-    ].forEach(([label, value, hint, action]) => {
-      const k = el("div", "kpi");
+      ["Not started", count("Not started"), "See these restrooms", goStatus("Not started")]
+    ];
+    // action cards: only shown while there is something to do
+    if (flagged) cards.push(["Duplicates to resolve", flagged, "Resolve duplicates", goDuplicates, "todo"]);
+    if (toConfirm) cards.push(["Confirm answers", toConfirm, "See these restrooms", goStatus("Confirm answers"), "todo"]);
+    if (!flagged && !toConfirm) cards.push(["Nothing pending", "✓", null, null, "clear"]);
+
+    cards.forEach(([label, value, hint, action, kind]) => {
+      const k = el("div", `kpi${kind ? " " + kind : ""}`);
       k.appendChild(el("div", "label", label));
       k.appendChild(el("div", "value", String(value)));
       if (action) {
@@ -519,7 +518,7 @@
     });
 
     if (needBoxes.length) {
-      list.appendChild(el("h3", "section-title", `Needs review (${needBoxes.length})`));
+      list.appendChild(el("h3", "section-title", `To resolve (${needBoxes.length})`));
       needBoxes.forEach((b) => list.appendChild(b));
     } else {
       list.appendChild(el("p", "rv-ok", "Nothing to review. Every duplicate has been handled ✓"));

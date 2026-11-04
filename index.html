@@ -1134,6 +1134,13 @@
       outline: none;
     }
 
+    .kpi.todo {
+      border-color: #f0d98a;
+      background: #fffaf0;
+    }
+
+    .kpi.clear .value { color: #1b9a4a; }
+
     .kpi.link .go {
       font-size: 12px;
       font-weight: 800;
@@ -1394,7 +1401,7 @@
             <span class="dot" style="background:#b6bfd1"></span>N/A = doesn't apply.
             "Not sure" answers are counted separately and flagged for review.</li>
           <li><strong>Status</strong>: Complete = everything answered · In progress = some questions left blank ·
-            Needs review = has "Not sure" answers · Not started = no inspection yet.</li>
+            Confirm answers = has "Not sure" answers · Not started = no inspection yet.</li>
         </ul>
       </details>
       <div class="room-head">
@@ -1426,7 +1433,7 @@
           <option value="all">All statuses</option>
           <option value="Complete">Complete</option>
           <option value="In progress">In progress</option>
-          <option value="Needs review">Needs review</option>
+          <option value="Confirm answers">Confirm answers</option>
           <option value="Not started">Not started</option>
         </select>
         <select id="dbSort" title="Sort">
@@ -1578,7 +1585,7 @@
       <div id="preview"></div>
     </section>
 
-    <p class="app-version">Version 2026-11-03.10</p>
+    <p class="app-version">Version 2026-11-03.11</p>
   </div>
 
   <div id="reviewModal" class="modal" hidden>
@@ -1605,7 +1612,7 @@
     </div>
   </div>
 
-  <script src="./app.js?v=2026-11-03.10"></script>
-  <script src="./dashboard.js?v=2026-11-03.10"></script>
+  <script src="./app.js?v=2026-11-03.11"></script>
+  <script src="./dashboard.js?v=2026-11-03.11"></script>
 </body>
 </html>
