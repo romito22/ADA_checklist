@@ -1383,14 +1383,20 @@
   
     /* ---------- Sky background + glass cards ---------- */
     body {
-      background: #8fb4c9 url("./sky.jpg") center / cover fixed no-repeat;
+      --sky-opacity: 1;
+      background: #fff;
       min-height: 100vh;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; z-index: -1;
+      background: url("./sky.jpg") center / cover no-repeat;
+      opacity: var(--sky-opacity);
     }
     .container { background: transparent; box-shadow: none; padding: 0; }
 
     .glass3d {
-      --filter-glass3d: blur(6px) brightness(0.92) saturate(1.2);
-      --color-glass3d: rgba(255, 255, 255, 0.58);
+      --filter-glass3d: blur(3px) brightness(0.86) saturate(1.2);
+      --color-glass3d: transparent;
       --noise-glass3d: url("https://www.transparenttextures.com/patterns/egg-shell.png");
       position: relative;
       z-index: 4;
@@ -1438,7 +1444,7 @@
     .modal { background: rgba(15, 35, 55, 0.45); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
     .modal-card { background: rgba(255, 255, 255, 0.92); }
     @media (max-width: 700px) {
-      body { padding: 14px; background-attachment: scroll; }
+      body { padding: 14px; }
       .panel.glass3d { padding: 16px; }
       .app-head { padding: 16px; }
     }
@@ -1675,7 +1681,7 @@
       <div id="preview"></div>
     </section>
 
-    <p class="app-version">Version 2026-11-03.13</p>
+    <p class="app-version">Version 2026-11-03.14</p>
   </div>
 
   <div id="reviewModal" class="modal" hidden>
@@ -1702,7 +1708,7 @@
     </div>
   </div>
 
-  <script src="./app.js?v=2026-11-03.13"></script>
-  <script src="./dashboard.js?v=2026-11-03.13"></script>
+  <script src="./app.js?v=2026-11-03.14"></script>
+  <script src="./dashboard.js?v=2026-11-03.14"></script>
 </body>
 </html>
