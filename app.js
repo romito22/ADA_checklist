@@ -650,7 +650,7 @@ function renderQuestion(q) {
       refWrap.innerHTML = "";
       const fallback = document.createElement("div");
       fallback.style.fontSize = "13px";
-      fallback.style.color = "#b00020";
+      fallback.style.color = "#ffb4ab";
       fallback.style.marginTop = "6px";
       fallback.textContent = `Could not load reference image: ${q.referenceImage}`;
       refWrap.appendChild(fallback);

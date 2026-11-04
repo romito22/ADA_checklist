@@ -1395,7 +1395,7 @@
     .container { background: transparent; box-shadow: none; padding: 0; }
 
     .glass3d {
-      --filter-glass3d: blur(3px) brightness(0.86) saturate(1.2);
+      --filter-glass3d: blur(6px) brightness(0.86) saturate(1.2);
       --color-glass3d: transparent;
       --noise-glass3d: url("https://www.transparenttextures.com/patterns/egg-shell.png");
       position: relative;
@@ -1485,6 +1485,30 @@
     .unsure-note, .rv-warn { border: 0; }
     .status-note.busy, .status-note.ok, .status-note.error { color: var(--g1); }
     .app-head, .tabs, .panel, .modal-card { --box: rgba(20, 32, 48, 0.30); }
+  
+    /* ---------- Dark controls everywhere ---------- */
+    input, select, textarea, .modal-card input, .modal-card select, .modal-card textarea {
+      background-color: rgba(20, 32, 48, 0.35);
+      border-color: rgba(255, 255, 255, 0.35);
+      color: var(--g1);
+      text-shadow: none;
+    }
+    input::placeholder, textarea::placeholder { color: var(--g3); }
+    select {
+      background-image: linear-gradient(45deg, transparent 50%, #e6e6e6 50%),
+                        linear-gradient(135deg, #e6e6e6 50%, transparent 50%);
+    }
+    option { background: #1c2838; color: var(--g1); }
+    input:focus, select:focus, textarea:focus { border-color: var(--g2); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15); }
+    .db-table td input[type="text"] { background: transparent; border-color: transparent; }
+    .db-table td input[type="text"]:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
+    .db-table td input[type="text"]:focus { background: rgba(20, 32, 48, 0.55); border-color: var(--g2); }
+    .db-table td, .db-table td.c-room input { color: var(--g1); }
+    .seg button { background: rgba(20, 32, 48, 0.35); color: var(--g1); }
+    .seg button.on { background: #1e5eff; color: #fff; }
+    .board .card { background: rgba(20, 32, 48, 0.35); border-color: rgba(255, 255, 255, 0.28); color: var(--g1); }
+    #resetBtn, .btn-sm.secondary, .modal-actions .secondary { background: rgba(255, 255, 255, 0.22); color: var(--g1); }
+      .panel a:not(.btn-sm) { color: var(--g1); }
   </style>
 </head>
 
@@ -1718,7 +1742,7 @@
       <div id="preview"></div>
     </section>
 
-    <p class="app-version">Version 2026-11-03.17</p>
+    <p class="app-version">Version 2026-11-03.18</p>
   </div>
 
   <div id="reviewModal" class="modal" hidden>
@@ -1745,7 +1769,7 @@
     </div>
   </div>
 
-  <script src="./app.js?v=2026-11-03.17"></script>
-  <script src="./dashboard.js?v=2026-11-03.17"></script>
+  <script src="./app.js?v=2026-11-03.18"></script>
+  <script src="./dashboard.js?v=2026-11-03.18"></script>
 </body>
 </html>
