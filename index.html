@@ -796,7 +796,26 @@
     .db-table td.c-done { text-align: center; }
     .db-table td.c-status { white-space: nowrap; padding: 3px 8px; }
     .db-table td.c-state { font-size: 12px; font-weight: 700; white-space: nowrap; color: #5b657a; padding: 3px 8px; }
-    .db-table td.c-state.ok { color: #1b7a3a; }
+    .db-table td.c-del { padding: 3px 6px; text-align: center; }
+
+    .del-btn {
+      background: none;
+      color: #8b93a7;
+      padding: 6px;
+      border-radius: 8px;
+      line-height: 0;
+    }
+
+    .del-btn:hover:not(:disabled),
+    .del-btn:focus-visible {
+      background: #fde3e1;
+      color: #d93025;
+      outline: none;
+    }
+
+    .del-btn:disabled { opacity: .35; cursor: default; }
+
+    .db-table tr.group td {
     .db-table td.c-state.error { color: #b3261e; }
 
     .db-table tr.group td {
@@ -1141,6 +1160,12 @@
 
     .kpi.clear .value { color: #1b9a4a; }
 
+    .kpi .value .of {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #5b657a;
+    }
+
     .kpi.link .go {
       font-size: 12px;
       font-weight: 800;
@@ -1473,6 +1498,7 @@
               <th>Done</th>
               <th>Notes</th>
               <th></th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="dbBody"></tbody>
@@ -1585,7 +1611,7 @@
       <div id="preview"></div>
     </section>
 
-    <p class="app-version">Version 2026-11-03.11</p>
+    <p class="app-version">Version 2026-11-03.12</p>
   </div>
 
   <div id="reviewModal" class="modal" hidden>
@@ -1612,7 +1638,7 @@
     </div>
   </div>
 
-  <script src="./app.js?v=2026-11-03.11"></script>
-  <script src="./dashboard.js?v=2026-11-03.11"></script>
+  <script src="./app.js?v=2026-11-03.12"></script>
+  <script src="./dashboard.js?v=2026-11-03.12"></script>
 </body>
 </html>

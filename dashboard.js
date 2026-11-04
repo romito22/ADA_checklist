@@ -226,19 +226,21 @@
 
     const toConfirm = count("Confirm answers");
     const cards = [
-      ["Complete", count("Complete"), "See these restrooms", goStatus("Complete")],
-      ["In progress", count("In progress"), "See which questions are missing", goStatus("In progress")],
-      ["Not started", count("Not started"), "See these restrooms", goStatus("Not started")]
+      ["Complete", count("Complete"), "See these restrooms", goStatus("Complete"), "", n],
+      ["In progress", count("In progress"), "See which questions are missing", goStatus("In progress"), "", n],
+      ["Not started", count("Not started"), "See these restrooms", goStatus("Not started"), "", n]
     ];
     // action cards: only shown while there is something to do
     if (flagged) cards.push(["Duplicates to resolve", flagged, "Resolve duplicates", goDuplicates, "todo"]);
-    if (toConfirm) cards.push(["Confirm answers", toConfirm, "See these restrooms", goStatus("Confirm answers"), "todo"]);
+    if (toConfirm) cards.push(["Confirm answers", toConfirm, "See these restrooms", goStatus("Confirm answers"), "todo", n]);
     if (!flagged && !toConfirm) cards.push(["Nothing pending", "✓", null, null, "clear"]);
 
-    cards.forEach(([label, value, hint, action, kind]) => {
+    cards.forEach(([label, value, hint, action, kind, outOf]) => {
       const k = el("div", `kpi${kind ? " " + kind : ""}`);
       k.appendChild(el("div", "label", label));
-      k.appendChild(el("div", "value", String(value)));
+      const v = el("div", "value", String(value));
+      if (outOf != null) v.appendChild(el("span", "of", ` / ${outOf}`));
+      k.appendChild(v);
       if (action) {
         k.classList.add("link");
         k.setAttribute("role", "button");
@@ -1140,7 +1142,7 @@
     if (!rows.length) {
       const tr = document.createElement("tr");
       const td = el("td", "", "No restrooms match these filters.");
-      td.colSpan = 8;
+      td.colSpan = 9;
       tr.appendChild(td);
       body.appendChild(tr);
       return;
@@ -1153,7 +1155,7 @@
       if (g.title) {
         const tr = el("tr", "group");
         const td = el("td", "", `${g.title}  (${g.rows.length})`);
-        td.colSpan = 8;
+        td.colSpan = 9;
         tr.appendChild(td);
         body.appendChild(tr);
       }
@@ -1183,7 +1185,20 @@
         notes.appendChild(textInput(row, "notes"));
         const state = cell("c-state");
 
-        tr.append(room, floor, type, status, last, done, notes, state);
+        const del = cell("c-del");
+        const delBtn = el("button", "del-btn");
+        delBtn.type = "button";
+        delBtn.disabled = !DB.live;
+        delBtn.title = `Delete restroom ${row.room}`;
+        delBtn.setAttribute("aria-label", `Delete restroom ${row.room}`);
+        delBtn.innerHTML =
+          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/>' +
+          '<path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/><path d="M10 11v6M14 11v6"/></svg>';
+        delBtn.addEventListener("click", () => deleteRestroom(row));
+        del.appendChild(delBtn);
+
+        tr.append(room, floor, type, status, last, done, notes, state, del);
         row._cells = { status, last, state };
         fillStatusCells(row);
         body.appendChild(tr);
@@ -1270,6 +1285,60 @@
       if (control.type === "checkbox") control.checked = String(previous).toLowerCase() === "done";
       else control.value = previous == null ? "" : previous;
       setState("Not saved ✗", "error");
+    }
+  }
+
+  // Removes a restroom from the list and the Dashboard. Its inspections are kept in the sheet.
+  async function deleteRestroom(row) {
+    if (!DB.live) {
+      alert("Deleting needs the live connection to the spreadsheet.");
+      return;
+    }
+    const p = DB.progress[normRoom(row.room)];
+    const n = p ? p.inspections : 0;
+    const label = `${row.room} (${row.type}, ${floorLabel(row.floor)})`;
+
+    let ok;
+    if (n > 0) {
+      const latest = p.date ? ` Latest: ${p.date}${p.inspector ? ` by ${p.inspector}` : ""}.` : "";
+      ok =
+        confirm(
+          `Restroom ${label} already has ${n} filled inspection${n === 1 ? "" : "s"}.${latest}\n\n` +
+            "Deleting it removes the restroom from your list and from the Dashboard totals.\n\n" +
+            "The answers are NOT erased: they stay in the Google Sheet (tab “answers”) and in the Duplicates history, " +
+            "but this restroom is no longer counted.\n\nDo you want to delete this restroom?"
+        ) && confirm(`Last check: really delete restroom ${row.room}, which already has a filled form?`);
+    } else {
+      ok = confirm(
+        `Delete restroom ${label}?\n\nIt has no inspections yet. It will leave the list and the Dashboard totals. ` +
+          "You can add it again later."
+      );
+    }
+    if (!ok) return;
+
+    const state = row._cells && row._cells.state;
+    if (state) {
+      state.innerHTML = "";
+      state.appendChild(makeLoader("Deleting…", { small: true }));
+    }
+    try {
+      const data = await post({
+        action: "deleteRestroom",
+        row: row.row,
+        expectedRoom: row.savedRoom,
+        by: typeof lastInspector === "function" ? lastInspector() : ""
+      });
+      if (!data.ok) throw new Error(data.error || "Could not delete");
+      // row numbers below it shifted, so reload everything from the sheet
+      await refresh();
+      setNote("dbStatus", `Deleted restroom ${row.room}. The Dashboard totals now use ${DB.rows.length} restrooms.`, false);
+    } catch (err) {
+      console.error("Delete failed:", err);
+      if (state) {
+        state.textContent = "Not deleted ✗";
+        state.className = "c-state error";
+      }
+      alert("The restroom could not be deleted. Nothing was changed.");
     }
   }
 
