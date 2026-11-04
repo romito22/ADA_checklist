@@ -528,14 +528,14 @@ function render() {
     wrapper.style.borderRadius = "12px";
     wrapper.style.margin = "12px 0";
     wrapper.style.overflow = "hidden";
-    wrapper.style.background = "rgba(20, 32, 48, 0.30)";
+    wrapper.style.background = "rgba(20, 32, 48, 0.48)";
 
     const header = document.createElement("div");
     header.style.display = "flex";
     header.style.justifyContent = "space-between";
     header.style.alignItems = "center";
     header.style.padding = "12px 16px";
-    header.style.background = "rgba(20, 32, 48, 0.55)";
+    header.style.background = "rgba(20, 32, 48, 0.72)";
     header.style.fontWeight = "900";
     header.style.color = "#f5f5f5";
 
